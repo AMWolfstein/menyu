@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* لوحة ألوان دافئة فاخرة مناسبة للمطاعم والمقاهي */
+@theme {
+  --color-base: #14110d;
+  --color-surface: #1d1812;
+  --color-surface-2: #261f17;
+  --color-line: #352c20;
+  --color-gold: #c9a36a;
+  --color-gold-soft: #e0c79b;
+  --color-cream: #f4eee3;
+  --color-muted: #a89b86;
+  --color-chili: #d4694a;
+
+  --font-display: var(--font-cairo), system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-base);
+  color: var(--color-cream);
+  font-family: var(--font-cairo), system-ui, sans-serif;
+  background-image: radial-gradient(
+    circle at 50% -10%,
+    rgba(201, 163, 106, 0.08),
+    transparent 55%
+  );
+}
+
+/* شريط تمرير أنيق */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold);
+}
