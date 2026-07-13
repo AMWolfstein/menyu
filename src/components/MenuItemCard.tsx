@@ -1,5 +1,4 @@
-import type { MenuItem } from "@/data/menu";
-import { restaurant } from "@/data/menu";
+import type { MenuItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 
 const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
@@ -9,7 +8,13 @@ const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
   حار: "bg-chili/15 text-chili border-chili/30",
 };
 
-export default function MenuItemCard({ item }: { item: MenuItem }) {
+export default function MenuItemCard({
+  item,
+  currency,
+}: {
+  item: MenuItem;
+  currency: string;
+}) {
   return (
     <article className="group flex items-start justify-between gap-4 rounded-xl border border-line bg-surface/60 p-4 transition-colors hover:border-gold/40 hover:bg-surface-2">
       <div className="min-w-0">
@@ -31,7 +36,7 @@ export default function MenuItemCard({ item }: { item: MenuItem }) {
       </div>
 
       <div className="shrink-0 whitespace-nowrap rounded-lg bg-base/60 px-3 py-1.5 font-display text-sm font-bold text-gold">
-        {formatPrice(item.price, restaurant.currency)}
+        {formatPrice(item.price, currency)}
       </div>
     </article>
   );

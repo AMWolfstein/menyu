@@ -1,6 +1,6 @@
-import { restaurant } from "@/data/menu";
+import type { Restaurant } from "@/types/menu";
 
-export default function MenuHeader() {
+export default function MenuHeader({ restaurant }: { restaurant: Restaurant }) {
   const initials = restaurant.name.trim().charAt(0);
 
   return (
