@@ -16,26 +16,25 @@ export default function MenuItemCard({
   currency: string;
 }) {
   return (
-    <article className="group flex items-start justify-between gap-4 rounded-xl border border-line bg-surface/60 p-4 transition-colors hover:border-gold/40 hover:bg-surface-2">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-display text-base font-bold text-cream">
-            {item.name}
-          </h3>
-          {item.badge && (
-            <span
-              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${badgeStyles[item.badge]}`}
-            >
-              {item.badge}
-            </span>
-          )}
-        </div>
-        <p className="mt-1 text-sm leading-relaxed text-muted">
-          {item.description}
-        </p>
+    <article className="group flex h-full flex-col rounded-xl border border-line bg-surface/60 p-4 transition-colors hover:border-gold/40 hover:bg-surface-2">
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-display text-base font-bold text-cream">
+          {item.name}
+        </h3>
+        {item.badge && (
+          <span
+            className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${badgeStyles[item.badge]}`}
+          >
+            {item.badge}
+          </span>
+        )}
       </div>
 
-      <div className="shrink-0 whitespace-nowrap rounded-lg bg-base/60 px-3 py-1.5 font-display text-sm font-bold text-gold">
+      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
+        {item.description}
+      </p>
+
+      <div className="mt-4 rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
         {formatPrice(item.price, currency)}
       </div>
     </article>
