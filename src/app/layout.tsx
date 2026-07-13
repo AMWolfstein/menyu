@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
+import { doc, getDoc } from "firebase/firestore";
 import "./globals.css";
-import { restaurant } from "@/data/menu";
+import { db } from "@/lib/firebase";
+import type { Restaurant } from "@/types/menu";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -9,10 +11,18 @@ const cairo = Cairo({
   weight: ["400", "500", "600", "700", "800"],
 });
 
-export const metadata: Metadata = {
-  title: `${restaurant.name} — المنيو الرقمي`,
-  description: restaurant.tagline,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const snap = await getDoc(doc(db, "settings", "restaurant"));
+    const restaurant = snap.exists() ? (snap.data() as Restaurant) : null;
+    return {
+      title: `${restaurant?.name ?? "المنيو الرقمي"} — المنيو الرقمي`,
+      description: restaurant?.tagline ?? "",
+    };
+  } catch {
+    return { title: "المنيو الرقمي", description: "" };
+  }
+}
 
 export default function RootLayout({
   children,

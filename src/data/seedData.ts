@@ -1,31 +1,8 @@
-// نموذج بيانات المنيو — مصمم ليكون قابلاً لإعادة الاستخدام لأي مطعم أو كافيه.
-// عدّل هذا الملف فقط لتغيير محتوى المنيو بالكامل.
+// بيانات أولية (seed) تُستخدم مرة واحدة فقط عبر زر "تعبئة البيانات الأولية" في
+// لوحة التحكم لنقل المحتوى إلى Firestore. لا تُستورد من أي صفحة عرض بعد الآن —
+// إدارة المحتوى الفعلية تتم من /admin/dashboard.
 
-export type MenuItem = {
-  id: string;
-  name: string;
-  description: string;
-  price: number; // بالدينار العراقي
-  badge?: "الأكثر طلباً" | "جديد" | "نباتي" | "حار";
-  available?: boolean;
-};
-
-export type MenuCategory = {
-  id: string;
-  name: string;
-  icon: string; // اسم رمز توضيحي (نص قصير)
-  items: MenuItem[];
-};
-
-export type Restaurant = {
-  name: string;
-  tagline: string;
-  currency: string;
-  phone: string;
-  address: string;
-  hours: string;
-  instagram?: string;
-};
+import type { MenuCategory, Restaurant } from "@/types/menu";
 
 export const restaurant: Restaurant = {
   name: "مقهى الواحة",

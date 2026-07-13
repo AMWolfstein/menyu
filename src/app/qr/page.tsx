@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { restaurant } from "@/data/menu";
+import { useMenuData } from "@/hooks/useMenuData";
 
 export default function QrPage() {
+  const { restaurant } = useMenuData();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [url, setUrl] = useState("");
 
@@ -31,7 +32,7 @@ export default function QrPage() {
     <main className="flex flex-1 items-center justify-center px-5 py-16">
       <div className="w-full max-w-sm rounded-2xl border border-line bg-surface/60 p-8 text-center">
         <h1 className="font-display text-2xl font-extrabold text-cream">
-          {restaurant.name}
+          {restaurant?.name ?? "المنيو الرقمي"}
         </h1>
         <p className="mt-2 text-sm text-muted">
           امسح الرمز لعرض المنيو على هاتفك
