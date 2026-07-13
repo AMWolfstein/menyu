@@ -1,16 +1,18 @@
 @import "tailwindcss";
 
-/* لوحة ألوان دافئة فاخرة مناسبة للمطاعم والمقاهي */
+/* لوحة ألوان مقتبسة من شعار Blue Freeze (أزرق سماوي + كحلي + أحمر) —
+   أسماء المتغيرات (gold/chili) اتسابت زي ما هي تفاديًا لتعديل كل مكان
+   بيستخدمها، بس القيم بقت زرقاء/كحلي بدل الدافئة الأصلية. */
 @theme {
-  --color-base: #14110d;
-  --color-surface: #1d1812;
-  --color-surface-2: #261f17;
-  --color-line: #352c20;
-  --color-gold: #c9a36a;
-  --color-gold-soft: #e0c79b;
-  --color-cream: #f4eee3;
-  --color-muted: #a89b86;
-  --color-chili: #d4694a;
+  --color-base: #0b1220;
+  --color-surface: #101b2e;
+  --color-surface-2: #16253d;
+  --color-line: #23385a;
+  --color-gold: #2fa8de;
+  --color-gold-soft: #7dcbee;
+  --color-cream: #eaf4fb;
+  --color-muted: #8fa3bf;
+  --color-chili: #e2231a;
 
   --font-display: var(--font-cairo), system-ui, sans-serif;
 }
@@ -29,7 +31,7 @@ body {
   font-family: var(--font-cairo), system-ui, sans-serif;
   background-image: radial-gradient(
     circle at 50% -10%,
-    rgba(201, 163, 106, 0.08),
+    rgba(47, 168, 222, 0.1),
     transparent 55%
   );
 }

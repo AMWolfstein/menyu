@@ -21,7 +21,7 @@ export default function QrPage() {
       QRCode.toCanvas(canvasRef.current, origin, {
         width: 260,
         margin: 1,
-        color: { dark: "#14110d", light: "#f4eee3" },
+        color: { dark: "#0b1220", light: "#eaf4fb" },
       });
     }
   }, []);

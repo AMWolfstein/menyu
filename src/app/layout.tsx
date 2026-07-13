@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const snap = await getDoc(doc(db, "settings", "restaurant"));
     const restaurant = snap.exists() ? (snap.data() as Restaurant) : null;
     return {
-      title: `${restaurant?.name ?? "المنيو الرقمي"} — المنيو الرقمي`,
+      title: restaurant?.name ?? "المنيو الرقمي",
       description: restaurant?.tagline ?? "",
     };
   } catch {
