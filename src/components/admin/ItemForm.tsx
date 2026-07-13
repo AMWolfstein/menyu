@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import { deleteField } from "firebase/firestore";
 import { addItem, deleteItem, updateItem } from "@/lib/firestore";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { MenuItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
+import ImageUploadField from "@/components/admin/ImageUploadField";
+import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 
 const inputClass =
   "rounded-lg border border-line bg-base/60 px-3 py-2 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none";
@@ -17,6 +21,7 @@ type ItemDraft = {
   price: string;
   badge: string;
   categoryId: string;
+  imageUrl: string;
 };
 
 const emptyDraft = (categoryId: string): ItemDraft => ({
@@ -25,6 +30,7 @@ const emptyDraft = (categoryId: string): ItemDraft => ({
   price: "",
   badge: "",
   categoryId,
+  imageUrl: "",
 });
 
 export default function ItemForm({
@@ -43,14 +49,17 @@ export default function ItemForm({
   const submitAdd = async (e: React.FormEvent, category: LiveMenuCategory) => {
     e.preventDefault();
     if (!addDraft || !addDraft.name.trim()) return;
+    // Firestore rejects literal `undefined` field values, so optional fields
+    // are only included when actually set — never written as `undefined`.
     await addItem({
       categoryId: category.id,
       name: addDraft.name,
       description: addDraft.description,
       price: Number(addDraft.price) || 0,
-      badge: (addDraft.badge || undefined) as MenuItem["badge"],
       available: true,
       order: category.items.length,
+      ...(addDraft.badge && { badge: addDraft.badge as MenuItem["badge"] }),
+      ...(addDraft.imageUrl && { imageUrl: addDraft.imageUrl }),
     });
     setAddDraft(null);
   };
@@ -63,17 +72,21 @@ export default function ItemForm({
       price: String(item.price),
       badge: item.badge ?? "",
       categoryId: item.categoryId,
+      imageUrl: item.imageUrl ?? "",
     });
   };
 
   const saveEdit = async (id: string) => {
     if (!editDraft) return;
+    // deleteField() actually removes the field; a literal `undefined` would
+    // make Firestore throw, so cleared optional fields use the sentinel.
     await updateItem(id, {
       name: editDraft.name,
       description: editDraft.description,
       price: Number(editDraft.price) || 0,
-      badge: (editDraft.badge || undefined) as MenuItem["badge"],
       categoryId: editDraft.categoryId,
+      badge: editDraft.badge ? (editDraft.badge as MenuItem["badge"]) : deleteField(),
+      imageUrl: editDraft.imageUrl ? editDraft.imageUrl : deleteField(),
     });
     setEditingId(null);
   };
@@ -105,76 +118,107 @@ export default function ItemForm({
                     className="rounded-lg border border-line bg-base/40 px-3 py-2"
                   >
                     {editingId === item.id && editDraft ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input
-                          className={inputClass}
-                          value={editDraft.name}
-                          onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
-                          placeholder="الاسم"
+                      <div className="flex flex-col gap-3">
+                        <ImageUploadField
+                          label="صورة الصنف"
+                          value={editDraft.imageUrl || undefined}
+                          onChange={(url) => setEditDraft({ ...editDraft, imageUrl: url })}
+                          folder="items"
                         />
-                        <input
-                          className={inputClass}
-                          value={editDraft.description}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, description: e.target.value })
-                          }
-                          placeholder="الوصف"
-                        />
-                        <input
-                          className={inputClass}
-                          type="number"
-                          value={editDraft.price}
-                          onChange={(e) => setEditDraft({ ...editDraft, price: e.target.value })}
-                          placeholder="السعر"
-                        />
-                        <select
-                          className={inputClass}
-                          value={editDraft.badge}
-                          onChange={(e) => setEditDraft({ ...editDraft, badge: e.target.value })}
-                        >
-                          <option value="">بدون</option>
-                          {badges.map((b) => (
-                            <option key={b} value={b}>
-                              {b}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          className={inputClass}
-                          value={editDraft.categoryId}
-                          onChange={(e) =>
-                            setEditDraft({ ...editDraft, categoryId: e.target.value })
-                          }
-                        >
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          onClick={() => saveEdit(item.id)}
-                          className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-base hover:bg-gold-soft"
-                        >
-                          حفظ
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="text-xs text-muted hover:text-cream"
-                        >
-                          إلغاء
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            className={inputClass}
+                            value={editDraft.name}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, name: e.target.value })
+                            }
+                            placeholder="الاسم"
+                          />
+                          <input
+                            className={inputClass}
+                            value={editDraft.description}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, description: e.target.value })
+                            }
+                            placeholder="الوصف"
+                          />
+                          <input
+                            className={inputClass}
+                            type="number"
+                            value={editDraft.price}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, price: e.target.value })
+                            }
+                            placeholder="السعر"
+                          />
+                          <select
+                            className={inputClass}
+                            value={editDraft.badge}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, badge: e.target.value })
+                            }
+                          >
+                            <option value="">بدون</option>
+                            {badges.map((b) => (
+                              <option key={b} value={b}>
+                                {b}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            className={inputClass}
+                            value={editDraft.categoryId}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, categoryId: e.target.value })
+                            }
+                          >
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => saveEdit(item.id)}
+                            className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-base hover:bg-gold-soft"
+                          >
+                            حفظ
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="text-xs text-muted hover:text-cream"
+                          >
+                            إلغاء
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className={`text-sm ${available ? "text-cream" : "text-muted line-through"}`}>
-                            {item.name}
-                          </p>
-                          <p className="text-xs text-muted">
-                            {formatPrice(item.price, currency)}
-                            {item.badge ? ` · ${item.badge}` : ""}
-                          </p>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-line">
+                            {item.imageUrl ? (
+                              <Image
+                                src={item.imageUrl}
+                                alt=""
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <ProductImagePlaceholder className="h-full w-full" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p
+                              className={`text-sm ${available ? "text-cream" : "text-muted line-through"}`}
+                            >
+                              {item.name}
+                            </p>
+                            <p className="text-xs text-muted">
+                              {formatPrice(item.price, currency)}
+                              {item.badge ? ` · ${item.badge}` : ""}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-3 text-xs">
                           <label className="flex items-center gap-1.5 text-muted">
@@ -185,10 +229,16 @@ export default function ItemForm({
                             />
                             متوفر
                           </label>
-                          <button onClick={() => startEdit(item)} className="text-gold hover:text-gold-soft">
+                          <button
+                            onClick={() => startEdit(item)}
+                            className="text-gold hover:text-gold-soft"
+                          >
                             تعديل
                           </button>
-                          <button onClick={() => handleDelete(item)} className="text-chili hover:opacity-80">
+                          <button
+                            onClick={() => handleDelete(item)}
+                            className="text-chili hover:opacity-80"
+                          >
                             حذف
                           </button>
                         </div>
@@ -202,54 +252,64 @@ export default function ItemForm({
             {addDraft && addDraft.categoryId === category.id ? (
               <form
                 onSubmit={(e) => submitAdd(e, category)}
-                className="mt-2 flex flex-wrap items-center gap-2"
+                className="mt-2 flex flex-col gap-3"
               >
-                <input
-                  className={inputClass}
-                  placeholder="الاسم"
-                  value={addDraft.name}
-                  onChange={(e) => setAddDraft({ ...addDraft, name: e.target.value })}
-                  required
+                <ImageUploadField
+                  label="صورة الصنف"
+                  value={addDraft.imageUrl || undefined}
+                  onChange={(url) => setAddDraft({ ...addDraft, imageUrl: url })}
+                  folder="items"
                 />
-                <input
-                  className={inputClass}
-                  placeholder="الوصف"
-                  value={addDraft.description}
-                  onChange={(e) => setAddDraft({ ...addDraft, description: e.target.value })}
-                />
-                <input
-                  className={inputClass}
-                  type="number"
-                  placeholder="السعر"
-                  value={addDraft.price}
-                  onChange={(e) => setAddDraft({ ...addDraft, price: e.target.value })}
-                  required
-                />
-                <select
-                  className={inputClass}
-                  value={addDraft.badge}
-                  onChange={(e) => setAddDraft({ ...addDraft, badge: e.target.value })}
-                >
-                  <option value="">بدون</option>
-                  {badges.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-base hover:bg-gold-soft"
-                >
-                  إضافة
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAddDraft(null)}
-                  className="text-xs text-muted hover:text-cream"
-                >
-                  إلغاء
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    className={inputClass}
+                    placeholder="الاسم"
+                    value={addDraft.name}
+                    onChange={(e) => setAddDraft({ ...addDraft, name: e.target.value })}
+                    required
+                  />
+                  <input
+                    className={inputClass}
+                    placeholder="الوصف"
+                    value={addDraft.description}
+                    onChange={(e) =>
+                      setAddDraft({ ...addDraft, description: e.target.value })
+                    }
+                  />
+                  <input
+                    className={inputClass}
+                    type="number"
+                    placeholder="السعر"
+                    value={addDraft.price}
+                    onChange={(e) => setAddDraft({ ...addDraft, price: e.target.value })}
+                    required
+                  />
+                  <select
+                    className={inputClass}
+                    value={addDraft.badge}
+                    onChange={(e) => setAddDraft({ ...addDraft, badge: e.target.value })}
+                  >
+                    <option value="">بدون</option>
+                    {badges.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-base hover:bg-gold-soft"
+                  >
+                    إضافة
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAddDraft(null)}
+                    className="text-xs text-muted hover:text-cream"
+                  >
+                    إلغاء
+                  </button>
+                </div>
               </form>
             ) : (
               <button
