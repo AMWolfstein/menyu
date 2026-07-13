@@ -3,6 +3,7 @@
 import MenuHeader from "@/components/MenuHeader";
 import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
+import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
 
 function MenuSkeleton() {
@@ -91,6 +92,8 @@ export default function MenuLive() {
           </p>
         </div>
       </footer>
+
+      <CartBar restaurant={restaurant} />
     </>
   );
 }

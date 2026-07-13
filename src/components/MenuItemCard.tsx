@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { MenuItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
+import { useCart } from "@/context/CartContext";
 
 const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
   "الأكثر طلباً": "bg-gold/15 text-gold-soft border-gold/30",
@@ -17,6 +18,9 @@ export default function MenuItemCard({
   item: MenuItem;
   currency: string;
 }) {
+  const { items, addItem, setQty } = useCart();
+  const qtyInCart = items.find((i) => i.id === item.id)?.qty ?? 0;
+
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface/60 transition-colors hover:border-gold/40 hover:bg-surface-2">
       <div className="relative h-48 w-full shrink-0">
@@ -51,8 +55,39 @@ export default function MenuItemCard({
           {item.description}
         </p>
 
-        <div className="mt-4 rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
-          {formatPrice(item.price, currency)}
+        <div className="mt-4 flex items-center gap-2">
+          <div className="flex-1 rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
+            {formatPrice(item.price, currency)}
+          </div>
+
+          {qtyInCart === 0 ? (
+            <button
+              onClick={() =>
+                addItem({ id: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl })
+              }
+              className="shrink-0 rounded-lg bg-gold px-3 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft"
+            >
+              + أضف
+            </button>
+          ) : (
+            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-gold/40">
+              <button
+                onClick={() => setQty(item.id, qtyInCart - 1)}
+                className="px-2.5 py-2 text-gold hover:text-gold-soft"
+                aria-label="إنقاص الكمية"
+              >
+                −
+              </button>
+              <span className="min-w-4 text-center text-sm text-cream">{qtyInCart}</span>
+              <button
+                onClick={() => setQty(item.id, qtyInCart + 1)}
+                className="px-2.5 py-2 text-gold hover:text-gold-soft"
+                aria-label="زيادة الكمية"
+              >
+                +
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </article>

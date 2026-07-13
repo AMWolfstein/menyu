@@ -4,6 +4,7 @@ import { doc, getDoc } from "firebase/firestore";
 import "./globals.css";
 import { db } from "@/lib/firebase";
 import type { Restaurant } from "@/types/menu";
+import { CartProvider } from "@/context/CartContext";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -31,7 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }
