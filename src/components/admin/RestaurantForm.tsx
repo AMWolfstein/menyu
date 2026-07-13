@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateRestaurant } from "@/lib/firestore";
 import type { Restaurant } from "@/types/menu";
+import ImageUploadField from "@/components/admin/ImageUploadField";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-base/60 px-3 py-2 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none";
@@ -19,7 +20,14 @@ const emptyRestaurant: Restaurant = {
 };
 
 export default function RestaurantForm({ restaurant }: { restaurant: Restaurant | null }) {
-  const [form, setForm] = useState<Restaurant>(restaurant ?? emptyRestaurant);
+  // Firestore rejects literal `undefined` field values on save, so optional
+  // fields absent on older documents (e.g. imageUrl added in a later release)
+  // are normalized to "" rather than left undefined.
+  const [form, setForm] = useState<Restaurant>({
+    ...(restaurant ?? emptyRestaurant),
+    instagram: restaurant?.instagram ?? "",
+    imageUrl: restaurant?.imageUrl ?? "",
+  });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -39,6 +47,15 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
       className="rounded-xl border border-line bg-surface/60 p-5"
     >
       <h2 className="font-display text-lg font-bold text-cream">معلومات المطعم</h2>
+
+      <div className="mt-4">
+        <ImageUploadField
+          label="الشعار / الصورة"
+          value={form.imageUrl}
+          onChange={(url) => setForm({ ...form, imageUrl: url })}
+          folder="restaurant"
+        />
+      </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div>

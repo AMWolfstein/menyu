@@ -7,6 +7,7 @@ export type MenuItem = {
   price: number; // بالدينار العراقي
   badge?: "الأكثر طلباً" | "جديد" | "نباتي" | "حار";
   available?: boolean;
+  imageUrl?: string;
 };
 
 export type MenuCategory = {
@@ -24,4 +25,5 @@ export type Restaurant = {
   address: string;
   hours: string;
   instagram?: string;
+  imageUrl?: string;
 };

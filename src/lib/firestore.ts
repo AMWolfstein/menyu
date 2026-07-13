@@ -10,6 +10,7 @@ import {
   where,
   writeBatch,
   type Unsubscribe,
+  type UpdateData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { MenuCategory, MenuItem, Restaurant } from "@/types/menu";
@@ -93,6 +94,7 @@ export function addItem(data: {
   price: number;
   badge?: MenuItem["badge"];
   available?: boolean;
+  imageUrl?: string;
   order: number;
 }): Promise<void> {
   const id = data.name.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40) || crypto.randomUUID();
@@ -101,7 +103,7 @@ export function addItem(data: {
 
 export function updateItem(
   id: string,
-  data: Partial<Omit<FirestoreItem, "id">>
+  data: UpdateData<Omit<FirestoreItem, "id">>
 ): Promise<void> {
   return updateDoc(doc(itemsCol, id), data);
 }
