@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { useMenuData } from "@/hooks/useMenuData";
 
@@ -11,6 +12,10 @@ export default function QrPage() {
 
   useEffect(() => {
     const origin = window.location.origin;
+    // Deferred to after mount, not a useState lazy initializer: the server
+    // render has no `window`, so reading location synchronously during the
+    // first client render would mismatch the SSR'd empty url.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrl(origin);
     if (canvasRef.current) {
       QRCode.toCanvas(canvasRef.current, origin, {
@@ -55,12 +60,12 @@ export default function QrPage() {
           تنزيل الرمز للطباعة
         </button>
 
-        <a
+        <Link
           href="/"
           className="mt-4 inline-block text-sm text-gold transition-colors hover:text-gold-soft"
         >
           العودة إلى المنيو
-        </a>
+        </Link>
       </div>
     </main>
   );
