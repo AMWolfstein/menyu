@@ -78,18 +78,7 @@ export default function MenuLive() {
 
       <footer className="border-t border-line bg-surface/40">
         <div className="mx-auto max-w-3xl px-4 py-8 text-center text-xs text-muted">
-          <p dir="ltr" className="font-display text-sm text-cream">
-            {restaurant.phone}
-          </p>
-          <p className="mt-2">{restaurant.name} — جميع الأسعار شاملة الخدمة</p>
-          <p className="mt-4">
-            <a
-              href="/qr"
-              className="text-gold transition-colors hover:text-gold-soft"
-            >
-              عرض رمز QR للطاولات
-            </a>
-          </p>
+          <p className="font-display text-sm text-cream">{restaurant.name} — جميع الأسعار شاملة الخدمة</p>
         </div>
       </footer>
 
