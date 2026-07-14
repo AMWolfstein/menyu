@@ -21,7 +21,7 @@ export default function QrPage() {
       QRCode.toCanvas(canvasRef.current, origin, {
         width: 260,
         margin: 1,
-        color: { dark: "#0b1220", light: "#eaf4fb" },
+        color: { dark: "#1a2035", light: "#ffffff" },
       });
     }
   }, []);
@@ -43,7 +43,7 @@ export default function QrPage() {
           امسح الرمز لعرض المنيو على هاتفك
         </p>
 
-        <div className="mx-auto mt-7 w-fit rounded-xl bg-cream p-4">
+        <div className="mx-auto mt-7 w-fit rounded-xl bg-white p-4">
           <canvas ref={canvasRef} />
         </div>
 
