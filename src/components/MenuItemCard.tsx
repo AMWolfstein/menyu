@@ -31,7 +31,7 @@ export default function MenuItemCard({
             src={item.imageUrl}
             alt={item.name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 1024px) 50vw, 33vw"
             className="object-cover"
           />
         ) : (
