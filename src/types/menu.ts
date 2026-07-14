@@ -5,7 +5,7 @@ export type MenuItem = {
   name: string;
   description: string;
   price: number; // بالدينار العراقي
-  badge?: "الأكثر طلباً" | "جديد" | "نباتي" | "حار";
+  badge?: "الأكثر طلباً" | "جديد" | "عادي" | "نباتي" | "حار";
   available?: boolean;
   imageUrl?: string;
   supplierId?: string;
@@ -23,11 +23,13 @@ export type Restaurant = {
   tagline: string;
   currency: string;
   phone: string;
-  address: string;
-  hours: string;
-  instagram?: string;
   imageUrl?: string;
   branchesEnabled?: boolean;
+  facebookUrl?: string;
+  whatsappUrl?: string;
+  instagramUrl?: string;
+  tiktokUrl?: string;
+  googleMapsUrl?: string;
 };
 
 /** عنصر قائمة بسيط (فرع، منطقة توصيل، طريقة دفع) — اسم فقط وترتيب. */

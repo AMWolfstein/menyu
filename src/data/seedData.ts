@@ -9,9 +9,6 @@ export const restaurant: Restaurant = {
   tagline: "قهوة مختصة ومأكولات طازجة في قلب المدينة",
   currency: "د.ع",
   phone: "+964 770 000 0000",
-  address: "بغداد - شارع الرشيد",
-  hours: "يومياً من 9 صباحاً حتى 12 منتصف الليل",
-  instagram: "@alwaha.cafe",
 };
 
 export const categories: MenuCategory[] = [
