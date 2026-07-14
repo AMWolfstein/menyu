@@ -1,10 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
-import { doc, getDoc } from "firebase/firestore";
 import "./globals.css";
-import { db } from "@/lib/firebase";
-import type { Restaurant } from "@/types/menu";
+import { getRestaurantOnce } from "@/lib/firestore";
 import { CartProvider } from "@/context/CartContext";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -12,17 +11,24 @@ const cairo = Cairo({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#0b1220",
+};
+
 export async function generateMetadata(): Promise<Metadata> {
-  try {
-    const snap = await getDoc(doc(db, "settings", "restaurant"));
-    const restaurant = snap.exists() ? (snap.data() as Restaurant) : null;
-    return {
+  const restaurant = await getRestaurantOnce();
+  return {
+    title: restaurant?.name ?? "المنيو الرقمي",
+    description: restaurant?.tagline ?? "",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
       title: restaurant?.name ?? "المنيو الرقمي",
-      description: restaurant?.tagline ?? "",
-    };
-  } catch {
-    return { title: "المنيو الرقمي", description: "" };
-  }
+    },
+    icons: {
+      apple: "/icons/apple-touch-icon.png",
+    },
+  };
 }
 
 export default function RootLayout({
@@ -34,6 +40,7 @@ export default function RootLayout({
     <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <CartProvider>{children}</CartProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
