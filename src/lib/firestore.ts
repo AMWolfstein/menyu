@@ -6,10 +6,12 @@ import {
   getDocs,
   onSnapshot,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
   writeBatch,
+  type Timestamp,
   type Unsubscribe,
   type UpdateData,
 } from "firebase/firestore";
@@ -24,6 +26,7 @@ export type FirestoreItem = Omit<MenuItem, "id"> & {
   id: string;
   categoryId: string;
   order: number;
+  createdAt?: Timestamp;
 };
 
 const settingsCol = collection(db, "settings");
@@ -142,7 +145,7 @@ export function addItem(data: {
   order: number;
 }): Promise<void> {
   const id = data.name.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40) || crypto.randomUUID();
-  return setDoc(doc(itemsCol, id), data);
+  return setDoc(doc(itemsCol, id), { ...data, createdAt: serverTimestamp() });
 }
 
 export function updateItem(

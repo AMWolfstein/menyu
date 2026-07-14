@@ -1,10 +1,13 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import MenuHeader from "@/components/MenuHeader";
 import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
 import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
+
+const PAGE_SIZE = 15; // 5 صفوف × 3 أعمدة في الشاشات الكبيرة
 
 function MenuSkeleton() {
   return (
@@ -22,6 +25,33 @@ function MenuSkeleton() {
 
 export default function MenuLive() {
   const { restaurant, categories, loading } = useMenuData();
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [page, setPage] = useState(1);
+
+  const allItems = useMemo(() => {
+    return categories
+      .flatMap((category) =>
+        category.items
+          .filter((item) => item.available !== false)
+          .map((item) => ({ ...item, categoryId: category.id }))
+      )
+      .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+  }, [categories]);
+
+  const filteredItems = useMemo(
+    () =>
+      activeCategory === "all"
+        ? allItems
+        : allItems.filter((item) => item.categoryId === activeCategory),
+    [allItems, activeCategory]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filteredItems.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
   if (loading) {
     return <MenuSkeleton />;
@@ -38,42 +68,48 @@ export default function MenuLive() {
     );
   }
 
-  const visibleCategories = categories
-    .map((category) => ({
-      ...category,
-      items: category.items.filter((item) => item.available !== false),
-    }))
-    .filter((category) => category.items.length > 0);
+  const handleSelectCategory = (id: string) => {
+    setActiveCategory(id);
+    setPage(1);
+  };
 
   return (
     <>
       <MenuHeader restaurant={restaurant} />
-      <CategoryNav items={visibleCategories.map((c) => ({ id: c.id, name: c.name }))} />
+      <CategoryNav
+        items={categories.map((c) => ({ id: c.id, name: c.name }))}
+        active={activeCategory}
+        onSelect={handleSelectCategory}
+      />
 
       <div className="mx-auto max-w-3xl px-4 pb-24 pt-6">
-        {visibleCategories.map((category) => (
-          <section
-            key={category.id}
-            id={`cat-${category.id}`}
-            className="scroll-mt-24 pt-8 first:pt-2"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <h2 className="font-display text-xl font-extrabold text-cream">
-                {category.name}
-              </h2>
-              <span className="h-px flex-1 bg-line" />
-              <span className="text-xs text-muted">
-                {category.items.length} أصناف
-              </span>
-            </div>
+        {pageItems.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pageItems.map((item) => (
+              <MenuItemCard key={item.id} item={item} currency={restaurant.currency} />
+            ))}
+          </div>
+        ) : (
+          <p className="py-12 text-center text-sm text-muted">لا توجد أصناف متاحة.</p>
+        )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {category.items.map((item) => (
-                <MenuItemCard key={item.id} item={item} currency={restaurant.currency} />
-              ))}
-            </div>
-          </section>
-        ))}
+        {totalPages > 1 && (
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors ${
+                  p === currentPage
+                    ? "border-gold bg-gold text-base"
+                    : "border-line bg-surface text-muted hover:border-gold/40 hover:text-cream"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <footer className="border-t border-line bg-surface/40">
