@@ -9,7 +9,7 @@ import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { suppliersApi } from "@/lib/firestore";
 
-const PAGE_SIZE = 15; // 5 صفوف × 3 أعمدة في الشاشات الكبيرة
+const PAGE_SIZE = 12; // يتقسم بالظبط على 2 (موبايل) و3 (شاشات كبيرة) و4 أعمدة
 
 function MenuSkeleton() {
   return (
@@ -119,7 +119,7 @@ export default function MenuLive() {
         )}
 
         {pageItems.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {pageItems.map((item) => (
               <MenuItemCard
                 key={item.id}
