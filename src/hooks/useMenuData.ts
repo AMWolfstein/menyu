@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { Timestamp } from "firebase/firestore";
 import {
   subscribeCategories,
   subscribeItems,
@@ -10,7 +11,11 @@ import {
 } from "@/lib/firestore";
 import type { MenuItem, Restaurant } from "@/types/menu";
 
-export type LiveMenuItem = MenuItem & { categoryId: string; order: number };
+export type LiveMenuItem = MenuItem & {
+  categoryId: string;
+  order: number;
+  createdAt?: Timestamp;
+};
 export type LiveMenuCategory = {
   id: string;
   name: string;
