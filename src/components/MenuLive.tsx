@@ -8,6 +8,7 @@ import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { suppliersApi } from "@/lib/firestore";
+import { isDiscountActive, getDiscountPercent } from "@/lib/discount";
 
 const PAGE_SIZE = 12; // يتقسم بالظبط على 2 (موبايل) و3 (شاشات كبيرة) و4 أعمدة
 
@@ -52,6 +53,11 @@ export default function MenuLive() {
     if (activeSupplier) {
       return allItems.filter((item) => item.supplierId === activeSupplier.id);
     }
+    if (activeCategory === "discounts") {
+      return allItems
+        .filter((item) => isDiscountActive(item))
+        .sort((a, b) => getDiscountPercent(b) - getDiscountPercent(a));
+    }
     return activeCategory === "all"
       ? allItems
       : allItems.filter((item) => item.categoryId === activeCategory);
@@ -95,7 +101,11 @@ export default function MenuLive() {
     <>
       <MenuHeader restaurant={restaurant} />
       <CategoryNav
-        items={categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon }))}
+        items={[
+          { id: "all", name: "الكل" },
+          { id: "discounts", name: "خصومات", icon: "🏷️" },
+          ...categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon })),
+        ]}
         active={activeCategory}
         onSelect={handleSelectCategory}
       />

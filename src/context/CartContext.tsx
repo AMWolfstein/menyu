@@ -6,6 +6,8 @@ export type CartItem = {
   id: string;
   name: string;
   price: number;
+  /** السعر الأصلي قبل الخصم — بيتحط بس لو الصنف كان عليه خصم وقت الإضافة، تُستخدم لحساب "وفّرت" في رسالة الواتساب. */
+  originalPrice?: number;
   imageUrl?: string;
   qty: number;
 };

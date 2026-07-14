@@ -27,6 +27,7 @@ export type FirestoreItem = Omit<MenuItem, "id"> & {
   categoryId: string;
   order: number;
   createdAt?: Timestamp;
+  discountEndsAt?: Timestamp;
 };
 
 const settingsCol = collection(db, "settings");
@@ -140,6 +141,8 @@ export function addItem(data: {
   name: string;
   description: string;
   price: number;
+  discountPrice?: number;
+  discountEndsAt?: Timestamp;
   badge?: MenuItem["badge"];
   available?: boolean;
   imageUrl?: string;

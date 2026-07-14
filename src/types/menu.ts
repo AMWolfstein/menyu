@@ -5,6 +5,7 @@ export type MenuItem = {
   name: string;
   description: string;
   price: number; // بالدينار العراقي
+  discountPrice?: number; // لازم يكون أقل من price
   badge?: "الأكثر طلباً" | "جديد" | "عادي" | "نباتي" | "حار";
   available?: boolean;
   imageUrl?: string;

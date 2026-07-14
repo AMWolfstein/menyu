@@ -4,8 +4,6 @@ import { useEffect, useRef } from "react";
 
 type NavItem = { id: string; name: string; icon?: string };
 
-const ALL_ID = "all";
-
 export default function CategoryNav({
   items,
   active,
@@ -16,7 +14,6 @@ export default function CategoryNav({
   onSelect: (id: string) => void;
 }) {
   const navRef = useRef<HTMLDivElement>(null);
-  const navItems: NavItem[] = [{ id: ALL_ID, name: "الكل" }, ...items];
 
   // إبقاء الزر النشط ظاهراً داخل الشريط الأفقي
   useEffect(() => {
@@ -30,7 +27,7 @@ export default function CategoryNav({
         ref={navRef}
         className="mx-auto flex max-w-3xl gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {navItems.map((it) => {
+        {items.map((it) => {
           const isActive = it.id === active;
           return (
             <button
