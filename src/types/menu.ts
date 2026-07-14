@@ -26,4 +26,12 @@ export type Restaurant = {
   hours: string;
   instagram?: string;
   imageUrl?: string;
+  branchesEnabled?: boolean;
+};
+
+/** عنصر قائمة بسيط (فرع، منطقة توصيل، طريقة دفع) — اسم فقط وترتيب. */
+export type SimpleListItem = {
+  id: string;
+  name: string;
+  order: number;
 };

@@ -3,25 +3,45 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
-import { buildWhatsAppOrderUrl } from "@/lib/whatsapp";
+import { buildWhatsAppOrderUrl, emptyCheckoutInfo, type CheckoutInfo } from "@/lib/whatsapp";
+import { branchesApi, deliveryZonesApi, paymentMethodsApi } from "@/lib/firestore";
+import { useSimpleList } from "@/hooks/useSimpleList";
 import { formatPrice } from "@/lib/format";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
+import CheckoutForm from "@/components/CheckoutForm";
 import type { Restaurant } from "@/types/menu";
 
 export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
   const { items, itemCount, total, removeItem, setQty, clearCart } = useCart();
   const [expanded, setExpanded] = useState(false);
+  const [checkout, setCheckout] = useState<CheckoutInfo>(emptyCheckoutInfo);
+
+  const { items: branches } = useSimpleList(branchesApi);
+  const { items: deliveryZones } = useSimpleList(deliveryZonesApi);
+  const { items: paymentMethods } = useSimpleList(paymentMethodsApi);
 
   if (itemCount === 0) return null;
 
-  const whatsappUrl = buildWhatsAppOrderUrl(items, restaurant);
+  const canSend =
+    checkout.name.trim() !== "" &&
+    checkout.phone.trim() !== "" &&
+    (checkout.orderType !== "delivery" || checkout.address.trim() !== "");
+
+  const whatsappUrl = buildWhatsAppOrderUrl(
+    items,
+    restaurant,
+    checkout,
+    branches,
+    deliveryZones,
+    paymentMethods
+  );
 
   const handleClear = () => {
     if (window.confirm("إفراغ السلة بالكامل؟")) clearCart();
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-30 max-h-[85vh] overflow-y-auto border-t border-line bg-surface/95 backdrop-blur">
       {expanded && (
         <div className="mx-auto max-w-3xl px-4 pt-4">
           <div className="flex items-center justify-between">
@@ -76,6 +96,15 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
               </li>
             ))}
           </ul>
+
+          <CheckoutForm
+            restaurant={restaurant}
+            branches={branches}
+            deliveryZones={deliveryZones}
+            paymentMethods={paymentMethods}
+            value={checkout}
+            onChange={setCheckout}
+          />
         </div>
       )}
 
@@ -93,14 +122,25 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
           <span className="text-xs text-muted">{expanded ? "إخفاء" : "عرض الطلب"}</span>
         </button>
 
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-lg bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
-        >
-          إرسال الطلب عبر واتساب
-        </a>
+        {canSend ? (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => clearCart()}
+            className="rounded-lg bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          >
+            إرسال الطلب عبر واتساب
+          </a>
+        ) : (
+          <button
+            onClick={() => setExpanded(true)}
+            className="rounded-lg bg-[#25D366]/40 px-4 py-2 text-sm font-bold text-white/70"
+            title="أكمل الاسم ورقم الهاتف أولاً"
+          >
+            إرسال الطلب عبر واتساب
+          </button>
+        )}
       </div>
     </div>
   );

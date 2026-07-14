@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { seedInitialData } from "@/lib/firestore";
+import { seedInitialData, branchesApi, deliveryZonesApi, paymentMethodsApi } from "@/lib/firestore";
 import { restaurant as seedRestaurant, categories as seedCategories } from "@/data/seedData";
 import { useMenuData } from "@/hooks/useMenuData";
+import { useSimpleList } from "@/hooks/useSimpleList";
 import RestaurantForm from "@/components/admin/RestaurantForm";
 import CategoryForm from "@/components/admin/CategoryForm";
 import ItemForm from "@/components/admin/ItemForm";
+import SimpleListManager from "@/components/admin/SimpleListManager";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -18,6 +20,9 @@ export default function AdminDashboardPage() {
   const [seeding, setSeeding] = useState(false);
 
   const { restaurant, categories, loading } = useMenuData();
+  const { items: branches } = useSimpleList(branchesApi);
+  const { items: deliveryZones } = useSimpleList(deliveryZonesApi);
+  const { items: paymentMethods } = useSimpleList(paymentMethodsApi);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
@@ -72,6 +77,9 @@ export default function AdminDashboardPage() {
         )}
         <CategoryForm categories={categories} />
         <ItemForm categories={categories} currency={restaurant?.currency ?? ""} />
+        <SimpleListManager title="الفروع" items={branches} api={branchesApi} />
+        <SimpleListManager title="مناطق التوصيل" items={deliveryZones} api={deliveryZonesApi} />
+        <SimpleListManager title="طرق الدفع" items={paymentMethods} api={paymentMethodsApi} />
       </div>
     </main>
   );
