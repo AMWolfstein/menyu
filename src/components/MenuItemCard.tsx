@@ -7,6 +7,7 @@ import { useCart } from "@/context/CartContext";
 const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
   "الأكثر طلباً": "bg-highlight/25 text-amber-800 border-highlight/60",
   جديد: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  عادي: "bg-line/40 text-muted border-line",
   نباتي: "bg-green-50 text-green-700 border-green-200",
   حار: "bg-chili/10 text-chili border-chili/30",
 };

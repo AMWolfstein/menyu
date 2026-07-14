@@ -13,7 +13,7 @@ import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 const inputClass =
   "rounded-lg border border-line bg-base/60 px-3 py-2 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none";
 
-const badges: NonNullable<MenuItem["badge"]>[] = ["الأكثر طلباً", "جديد", "نباتي", "حار"];
+const badges: NonNullable<MenuItem["badge"]>[] = ["عادي", "نباتي", "حار"];
 
 type ItemDraft = {
   name: string;
@@ -29,7 +29,7 @@ const emptyDraft = (categoryId: string): ItemDraft => ({
   name: "",
   description: "",
   price: "",
-  badge: "",
+  badge: "عادي",
   categoryId,
   imageUrl: "",
   supplierId: "",
@@ -75,7 +75,7 @@ export default function ItemForm({
       name: item.name,
       description: item.description,
       price: String(item.price),
-      badge: item.badge ?? "",
+      badge: item.badge ?? "عادي",
       categoryId: item.categoryId,
       imageUrl: item.imageUrl ?? "",
       supplierId: item.supplierId ?? "",
@@ -165,7 +165,6 @@ export default function ItemForm({
                               setEditDraft({ ...editDraft, badge: e.target.value })
                             }
                           >
-                            <option value="">بدون</option>
                             {badges.map((b) => (
                               <option key={b} value={b}>
                                 {b}
@@ -313,7 +312,6 @@ export default function ItemForm({
                     value={addDraft.badge}
                     onChange={(e) => setAddDraft({ ...addDraft, badge: e.target.value })}
                   >
-                    <option value="">بدون</option>
                     {badges.map((b) => (
                       <option key={b} value={b}>
                         {b}

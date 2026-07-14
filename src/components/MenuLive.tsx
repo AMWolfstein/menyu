@@ -95,7 +95,7 @@ export default function MenuLive() {
     <>
       <MenuHeader restaurant={restaurant} />
       <CategoryNav
-        items={categories.map((c) => ({ id: c.id, name: c.name }))}
+        items={categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon }))}
         active={activeCategory}
         onSelect={handleSelectCategory}
       />

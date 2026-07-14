@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-type NavItem = { id: string; name: string };
+type NavItem = { id: string; name: string; icon?: string };
 
 const ALL_ID = "all";
 
@@ -43,7 +43,10 @@ export default function CategoryNav({
                   : "border-line bg-surface text-muted hover:border-gold/40 hover:text-cream"
               }`}
             >
-              {it.name}
+              <span className="inline-flex items-center gap-1.5">
+                {it.icon && <span>{it.icon}</span>}
+                <span>{it.name}</span>
+              </span>
             </button>
           );
         })}

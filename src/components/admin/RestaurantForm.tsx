@@ -14,9 +14,6 @@ const emptyRestaurant: Restaurant = {
   tagline: "",
   currency: "",
   phone: "",
-  address: "",
-  hours: "",
-  instagram: "",
 };
 
 export default function RestaurantForm({ restaurant }: { restaurant: Restaurant | null }) {
@@ -25,9 +22,13 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
   // are normalized to "" rather than left undefined.
   const [form, setForm] = useState<Restaurant>({
     ...(restaurant ?? emptyRestaurant),
-    instagram: restaurant?.instagram ?? "",
     imageUrl: restaurant?.imageUrl ?? "",
     branchesEnabled: restaurant?.branchesEnabled ?? false,
+    facebookUrl: restaurant?.facebookUrl ?? "",
+    whatsappUrl: restaurant?.whatsappUrl ?? "",
+    instagramUrl: restaurant?.instagramUrl ?? "",
+    tiktokUrl: restaurant?.tiktokUrl ?? "",
+    googleMapsUrl: restaurant?.googleMapsUrl ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -94,29 +95,61 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
         </div>
+      </div>
+
+      <h3 className="mt-6 font-display text-sm font-bold text-cream">روابط التواصل</h3>
+      <p className="mt-1 text-xs text-muted">
+        اتركها فاضية لو مش عايز الأيقونة تظهر في الصفحة الرئيسية.
+      </p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={labelClass}>فيسبوك</label>
+          <input
+            className={inputClass}
+            dir="ltr"
+            placeholder="https://facebook.com/..."
+            value={form.facebookUrl ?? ""}
+            onChange={(e) => setForm({ ...form, facebookUrl: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelClass}>واتساب</label>
+          <input
+            className={inputClass}
+            dir="ltr"
+            placeholder="https://wa.me/2010..."
+            value={form.whatsappUrl ?? ""}
+            onChange={(e) => setForm({ ...form, whatsappUrl: e.target.value })}
+          />
+        </div>
         <div>
           <label className={labelClass}>انستغرام</label>
           <input
             className={inputClass}
             dir="ltr"
-            value={form.instagram ?? ""}
-            onChange={(e) => setForm({ ...form, instagram: e.target.value })}
+            placeholder="https://instagram.com/..."
+            value={form.instagramUrl ?? ""}
+            onChange={(e) => setForm({ ...form, instagramUrl: e.target.value })}
           />
         </div>
         <div>
-          <label className={labelClass}>العنوان</label>
+          <label className={labelClass}>تيك توك</label>
           <input
             className={inputClass}
-            value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            dir="ltr"
+            placeholder="https://tiktok.com/@..."
+            value={form.tiktokUrl ?? ""}
+            onChange={(e) => setForm({ ...form, tiktokUrl: e.target.value })}
           />
         </div>
         <div>
-          <label className={labelClass}>ساعات العمل</label>
+          <label className={labelClass}>جوجل مابس</label>
           <input
             className={inputClass}
-            value={form.hours}
-            onChange={(e) => setForm({ ...form, hours: e.target.value })}
+            dir="ltr"
+            placeholder="https://maps.app.goo.gl/..."
+            value={form.googleMapsUrl ?? ""}
+            onChange={(e) => setForm({ ...form, googleMapsUrl: e.target.value })}
           />
         </div>
       </div>
