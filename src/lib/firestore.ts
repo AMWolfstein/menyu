@@ -14,7 +14,7 @@ import {
   type UpdateData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { MenuCategory, MenuItem, Restaurant } from "@/types/menu";
+import type { MenuCategory, MenuItem, Restaurant, SimpleListItem } from "@/types/menu";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
   order: number;
@@ -29,6 +29,39 @@ export type FirestoreItem = Omit<MenuItem, "id"> & {
 const settingsCol = collection(db, "settings");
 const categoriesCol = collection(db, "categories");
 const itemsCol = collection(db, "items");
+
+// ---------- قوائم بسيطة (فروع / مناطق توصيل / طرق دفع) ----------
+// نفس شكل CRUD الفئات بالظبط (اسم + ترتيب)، معمّم مرة واحدة بدل تكراره 3 مرات.
+
+function makeSimpleListApi(collectionName: string) {
+  const col = collection(db, collectionName);
+  return {
+    subscribe(cb: (items: SimpleListItem[]) => void): Unsubscribe {
+      return onSnapshot(col, (snap) => {
+        const items = snap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<SimpleListItem, "id">),
+        }));
+        cb(items.sort((a, b) => a.order - b.order));
+      });
+    },
+    add(name: string, order: number): Promise<void> {
+      const id =
+        name.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40) || crypto.randomUUID();
+      return setDoc(doc(col, id), { name, order });
+    },
+    update(id: string, name: string): Promise<void> {
+      return updateDoc(doc(col, id), { name });
+    },
+    remove(id: string): Promise<void> {
+      return deleteDoc(doc(col, id));
+    },
+  };
+}
+
+export const branchesApi = makeSimpleListApi("branches");
+export const deliveryZonesApi = makeSimpleListApi("deliveryZones");
+export const paymentMethodsApi = makeSimpleListApi("paymentMethods");
 
 // ---------- قراءة حية (real-time) ----------
 
