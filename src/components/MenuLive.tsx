@@ -6,6 +6,8 @@ import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
 import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
+import { useSimpleList } from "@/hooks/useSimpleList";
+import { suppliersApi } from "@/lib/firestore";
 
 const PAGE_SIZE = 15; // 5 صفوف × 3 أعمدة في الشاشات الكبيرة
 
@@ -25,7 +27,11 @@ function MenuSkeleton() {
 
 export default function MenuLive() {
   const { restaurant, categories, loading } = useMenuData();
+  const { items: suppliers } = useSimpleList(suppliersApi);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSupplier, setActiveSupplier] = useState<{ id: string; name: string } | null>(
+    null
+  );
   const [page, setPage] = useState(1);
 
   const allItems = useMemo(() => {
@@ -33,18 +39,23 @@ export default function MenuLive() {
       .flatMap((category) =>
         category.items
           .filter((item) => item.available !== false)
-          .map((item) => ({ ...item, categoryId: category.id }))
+          .map((item) => ({
+            ...item,
+            categoryId: category.id,
+            supplierName: suppliers.find((s) => s.id === item.supplierId)?.name,
+          }))
       )
       .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
-  }, [categories]);
+  }, [categories, suppliers]);
 
-  const filteredItems = useMemo(
-    () =>
-      activeCategory === "all"
-        ? allItems
-        : allItems.filter((item) => item.categoryId === activeCategory),
-    [allItems, activeCategory]
-  );
+  const filteredItems = useMemo(() => {
+    if (activeSupplier) {
+      return allItems.filter((item) => item.supplierId === activeSupplier.id);
+    }
+    return activeCategory === "all"
+      ? allItems
+      : allItems.filter((item) => item.categoryId === activeCategory);
+  }, [allItems, activeCategory, activeSupplier]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -70,6 +81,13 @@ export default function MenuLive() {
 
   const handleSelectCategory = (id: string) => {
     setActiveCategory(id);
+    setActiveSupplier(null);
+    setPage(1);
+  };
+
+  const handleSelectSupplier = (id: string, name: string) => {
+    setActiveSupplier({ id, name });
+    setActiveCategory("all");
     setPage(1);
   };
 
@@ -83,10 +101,32 @@ export default function MenuLive() {
       />
 
       <div className="mx-auto max-w-3xl px-4 pb-24 pt-6">
+        {activeSupplier && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
+            <span className="text-cream">
+              أصناف المورد: <span className="font-bold text-gold">{activeSupplier.name}</span>
+            </span>
+            <button
+              onClick={() => {
+                setActiveSupplier(null);
+                setPage(1);
+              }}
+              className="text-muted hover:text-cream"
+            >
+              ✕ إلغاء
+            </button>
+          </div>
+        )}
+
         {pageItems.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {pageItems.map((item) => (
-              <MenuItemCard key={item.id} item={item} currency={restaurant.currency} />
+              <MenuItemCard
+                key={item.id}
+                item={item}
+                currency={restaurant.currency}
+                onSupplierClick={handleSelectSupplier}
+              />
             ))}
           </div>
         ) : (

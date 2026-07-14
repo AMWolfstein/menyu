@@ -5,7 +5,7 @@ import Image from "next/image";
 import { deleteField } from "firebase/firestore";
 import { addItem, deleteItem, updateItem } from "@/lib/firestore";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
-import type { MenuItem } from "@/types/menu";
+import type { MenuItem, SimpleListItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
@@ -22,6 +22,7 @@ type ItemDraft = {
   badge: string;
   categoryId: string;
   imageUrl: string;
+  supplierId: string;
 };
 
 const emptyDraft = (categoryId: string): ItemDraft => ({
@@ -31,14 +32,17 @@ const emptyDraft = (categoryId: string): ItemDraft => ({
   badge: "",
   categoryId,
   imageUrl: "",
+  supplierId: "",
 });
 
 export default function ItemForm({
   categories,
   currency,
+  suppliers,
 }: {
   categories: LiveMenuCategory[];
   currency: string;
+  suppliers: SimpleListItem[];
 }) {
   const [addDraft, setAddDraft] = useState<ItemDraft | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -60,6 +64,7 @@ export default function ItemForm({
       order: category.items.length,
       ...(addDraft.badge && { badge: addDraft.badge as MenuItem["badge"] }),
       ...(addDraft.imageUrl && { imageUrl: addDraft.imageUrl }),
+      ...(addDraft.supplierId && { supplierId: addDraft.supplierId }),
     });
     setAddDraft(null);
   };
@@ -73,6 +78,7 @@ export default function ItemForm({
       badge: item.badge ?? "",
       categoryId: item.categoryId,
       imageUrl: item.imageUrl ?? "",
+      supplierId: item.supplierId ?? "",
     });
   };
 
@@ -87,6 +93,7 @@ export default function ItemForm({
       categoryId: editDraft.categoryId,
       badge: editDraft.badge ? (editDraft.badge as MenuItem["badge"]) : deleteField(),
       imageUrl: editDraft.imageUrl ? editDraft.imageUrl : deleteField(),
+      supplierId: editDraft.supplierId ? editDraft.supplierId : deleteField(),
     });
     setEditingId(null);
   };
@@ -178,6 +185,20 @@ export default function ItemForm({
                               </option>
                             ))}
                           </select>
+                          <select
+                            className={inputClass}
+                            value={editDraft.supplierId}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, supplierId: e.target.value })
+                            }
+                          >
+                            <option value="">بدون مورد</option>
+                            {suppliers.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
                           <button
                             onClick={() => saveEdit(item.id)}
                             className="rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-base hover:bg-gold-soft"
@@ -217,6 +238,9 @@ export default function ItemForm({
                             <p className="text-xs text-muted">
                               {formatPrice(item.price, currency)}
                               {item.badge ? ` · ${item.badge}` : ""}
+                              {item.supplierId
+                                ? ` · ${suppliers.find((s) => s.id === item.supplierId)?.name ?? ""}`
+                                : ""}
                             </p>
                           </div>
                         </div>
@@ -293,6 +317,18 @@ export default function ItemForm({
                     {badges.map((b) => (
                       <option key={b} value={b}>
                         {b}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className={inputClass}
+                    value={addDraft.supplierId}
+                    onChange={(e) => setAddDraft({ ...addDraft, supplierId: e.target.value })}
+                  >
+                    <option value="">بدون مورد</option>
+                    {suppliers.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
                       </option>
                     ))}
                   </select>
