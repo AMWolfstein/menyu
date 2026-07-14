@@ -2,6 +2,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -37,6 +38,16 @@ export function subscribeRestaurant(
   return onSnapshot(doc(settingsCol, "restaurant"), (snap) => {
     cb(snap.exists() ? (snap.data() as Restaurant) : null);
   });
+}
+
+/** قراءة مرة واحدة (بدون اشتراك حي) — تُستخدم في السيرفر لـ generateMetadata والـ manifest. */
+export async function getRestaurantOnce(): Promise<Restaurant | null> {
+  try {
+    const snap = await getDoc(doc(settingsCol, "restaurant"));
+    return snap.exists() ? (snap.data() as Restaurant) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function subscribeCategories(
