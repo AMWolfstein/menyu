@@ -1,24 +1,27 @@
 @import "tailwindcss";
 
-/* لوحة ألوان مقتبسة من شعار Blue Freeze (أزرق سماوي + كحلي + أحمر) —
-   أسماء المتغيرات (gold/chili) اتسابت زي ما هي تفاديًا لتعديل كل مكان
-   بيستخدمها، بس القيم بقت زرقاء/كحلي بدل الدافئة الأصلية. */
+/* لوحة ألوان فاتحة  —
+   خلفية بيضاء/رمادي فاتح، كحلي أساسي، وأصفر للتمييز. أسماء المتغيرات
+   (gold/cream/chili) اتسابت زي ما هي تفاديًا لتعديل كل مكان بيستخدمها، بس
+   القيم بقت فاتحة بدل الغامقة الأصلية — لاحظ إن دور "cream" اتقلب من نص
+   فاتح على خلفية غامقة إلى نص غامق على خلفية فاتحة. */
 @theme {
-  --color-base: #0b1220;
-  --color-surface: #101b2e;
-  --color-surface-2: #16253d;
-  --color-line: #23385a;
-  --color-gold: #2fa8de;
-  --color-gold-soft: #7dcbee;
-  --color-cream: #eaf4fb;
-  --color-muted: #8fa3bf;
+  --color-base: #f4f8fc;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef2f9;
+  --color-line: #e1e7f2;
+  --color-gold: #2f3c93;
+  --color-gold-soft: #4c5ab5;
+  --color-cream: #1a2035;
+  --color-muted: #6b7690;
   --color-chili: #e2231a;
+  --color-highlight: #eecf36;
 
   --font-display: var(--font-cairo), system-ui, sans-serif;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
@@ -29,11 +32,6 @@ body {
   background-color: var(--color-base);
   color: var(--color-cream);
   font-family: var(--font-cairo), system-ui, sans-serif;
-  background-image: radial-gradient(
-    circle at 50% -10%,
-    rgba(47, 168, 222, 0.1),
-    transparent 55%
-  );
 }
 
 /* شريط تمرير أنيق */

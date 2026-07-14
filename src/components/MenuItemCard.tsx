@@ -5,10 +5,10 @@ import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 import { useCart } from "@/context/CartContext";
 
 const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
-  "الأكثر طلباً": "bg-gold/15 text-gold-soft border-gold/30",
-  جديد: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  نباتي: "bg-green-600/15 text-green-300 border-green-600/30",
-  حار: "bg-chili/15 text-chili border-chili/30",
+  "الأكثر طلباً": "bg-highlight/25 text-amber-800 border-highlight/60",
+  جديد: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  نباتي: "bg-green-50 text-green-700 border-green-200",
+  حار: "bg-chili/10 text-chili border-chili/30",
 };
 
 export default function MenuItemCard({
