@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { deleteField } from "firebase/firestore";
+import { deleteField, Timestamp } from "firebase/firestore";
 import { addItem, deleteItem, updateItem } from "@/lib/firestore";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { MenuItem, SimpleListItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
+import { isDiscountActive } from "@/lib/discount";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 
@@ -19,6 +20,8 @@ type ItemDraft = {
   name: string;
   description: string;
   price: string;
+  discountPrice: string;
+  discountEndsAt: string;
   badge: string;
   categoryId: string;
   imageUrl: string;
@@ -29,11 +32,21 @@ const emptyDraft = (categoryId: string): ItemDraft => ({
   name: "",
   description: "",
   price: "",
+  discountPrice: "",
+  discountEndsAt: "",
   badge: "عادي",
   categoryId,
   imageUrl: "",
   supplierId: "",
 });
+
+/** السعر بعد الخصم اختياري، لكن لازم يكون رقم صحيح أقل من السعر الأصلي. */
+function isValidDiscount(price: string, discountPrice: string): boolean {
+  if (!discountPrice.trim()) return true;
+  const p = Number(price);
+  const d = Number(discountPrice);
+  return Number.isFinite(d) && d > 0 && d < p;
+}
 
 export default function ItemForm({
   categories,
@@ -53,6 +66,10 @@ export default function ItemForm({
   const submitAdd = async (e: React.FormEvent, category: LiveMenuCategory) => {
     e.preventDefault();
     if (!addDraft || !addDraft.name.trim()) return;
+    if (!isValidDiscount(addDraft.price, addDraft.discountPrice)) {
+      window.alert("السعر بعد الخصم لازم يكون رقم أقل من السعر الأصلي");
+      return;
+    }
     // Firestore rejects literal `undefined` field values, so optional fields
     // are only included when actually set — never written as `undefined`.
     await addItem({
@@ -65,6 +82,10 @@ export default function ItemForm({
       ...(addDraft.badge && { badge: addDraft.badge as MenuItem["badge"] }),
       ...(addDraft.imageUrl && { imageUrl: addDraft.imageUrl }),
       ...(addDraft.supplierId && { supplierId: addDraft.supplierId }),
+      ...(addDraft.discountPrice && { discountPrice: Number(addDraft.discountPrice) }),
+      ...(addDraft.discountEndsAt && {
+        discountEndsAt: Timestamp.fromDate(new Date(`${addDraft.discountEndsAt}T23:59:59`)),
+      }),
     });
     setAddDraft(null);
   };
@@ -75,6 +96,8 @@ export default function ItemForm({
       name: item.name,
       description: item.description,
       price: String(item.price),
+      discountPrice: item.discountPrice != null ? String(item.discountPrice) : "",
+      discountEndsAt: item.discountEndsAt ? item.discountEndsAt.toDate().toISOString().slice(0, 10) : "",
       badge: item.badge ?? "عادي",
       categoryId: item.categoryId,
       imageUrl: item.imageUrl ?? "",
@@ -84,6 +107,10 @@ export default function ItemForm({
 
   const saveEdit = async (id: string) => {
     if (!editDraft) return;
+    if (!isValidDiscount(editDraft.price, editDraft.discountPrice)) {
+      window.alert("السعر بعد الخصم لازم يكون رقم أقل من السعر الأصلي");
+      return;
+    }
     // deleteField() actually removes the field; a literal `undefined` would
     // make Firestore throw, so cleared optional fields use the sentinel.
     await updateItem(id, {
@@ -94,6 +121,10 @@ export default function ItemForm({
       badge: editDraft.badge ? (editDraft.badge as MenuItem["badge"]) : deleteField(),
       imageUrl: editDraft.imageUrl ? editDraft.imageUrl : deleteField(),
       supplierId: editDraft.supplierId ? editDraft.supplierId : deleteField(),
+      discountPrice: editDraft.discountPrice ? Number(editDraft.discountPrice) : deleteField(),
+      discountEndsAt: editDraft.discountEndsAt
+        ? Timestamp.fromDate(new Date(`${editDraft.discountEndsAt}T23:59:59`))
+        : deleteField(),
     });
     setEditingId(null);
   };
@@ -157,6 +188,24 @@ export default function ItemForm({
                               setEditDraft({ ...editDraft, price: e.target.value })
                             }
                             placeholder="السعر"
+                          />
+                          <input
+                            className={inputClass}
+                            type="number"
+                            value={editDraft.discountPrice}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, discountPrice: e.target.value })
+                            }
+                            placeholder="السعر بعد الخصم (اختياري)"
+                          />
+                          <input
+                            className={inputClass}
+                            type="date"
+                            value={editDraft.discountEndsAt}
+                            onChange={(e) =>
+                              setEditDraft({ ...editDraft, discountEndsAt: e.target.value })
+                            }
+                            title="تاريخ انتهاء الخصم (اختياري)"
                           />
                           <select
                             className={inputClass}
@@ -235,7 +284,21 @@ export default function ItemForm({
                               {item.name}
                             </p>
                             <p className="text-xs text-muted">
-                              {formatPrice(item.price, currency)}
+                              {item.discountPrice ? (
+                                <>
+                                  <span className="line-through">
+                                    {formatPrice(item.price, currency)}
+                                  </span>{" "}
+                                  <span className="text-chili">
+                                    {formatPrice(item.discountPrice, currency)}
+                                  </span>
+                                  {!isDiscountActive(item) && (
+                                    <span className="text-muted"> (منتهي)</span>
+                                  )}
+                                </>
+                              ) : (
+                                formatPrice(item.price, currency)
+                              )}
                               {item.badge ? ` · ${item.badge}` : ""}
                               {item.supplierId
                                 ? ` · ${suppliers.find((s) => s.id === item.supplierId)?.name ?? ""}`
@@ -306,6 +369,24 @@ export default function ItemForm({
                     value={addDraft.price}
                     onChange={(e) => setAddDraft({ ...addDraft, price: e.target.value })}
                     required
+                  />
+                  <input
+                    className={inputClass}
+                    type="number"
+                    placeholder="السعر بعد الخصم (اختياري)"
+                    value={addDraft.discountPrice}
+                    onChange={(e) =>
+                      setAddDraft({ ...addDraft, discountPrice: e.target.value })
+                    }
+                  />
+                  <input
+                    className={inputClass}
+                    type="date"
+                    value={addDraft.discountEndsAt}
+                    onChange={(e) =>
+                      setAddDraft({ ...addDraft, discountEndsAt: e.target.value })
+                    }
+                    title="تاريخ انتهاء الخصم (اختياري)"
                   />
                   <select
                     className={inputClass}

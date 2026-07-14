@@ -45,6 +45,11 @@ export function buildWhatsAppOrderUrl(
   ]);
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const savings = items.reduce(
+    (sum, item) =>
+      sum + (item.originalPrice ? (item.originalPrice - item.price) * item.qty : 0),
+    0
+  );
 
   const lines = [
     `طلب جديد - ${restaurant.name}`,
@@ -63,6 +68,7 @@ export function buildWhatsAppOrderUrl(
     "",
     `المجموع الفرعي: ${formatPrice(total, restaurant.currency)}`,
     `الإجمالي: ${formatPrice(total, restaurant.currency)}`,
+    ...(savings > 0 ? [`💰 وفّرت: ${formatPrice(savings, restaurant.currency)}`] : []),
     "",
     ...(paymentMethodName ? [`طريقة الدفع: ${paymentMethodName}`] : []),
     `ملاحظات: ${checkout.notes.trim() || "-"}`,

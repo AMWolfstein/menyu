@@ -15,6 +15,7 @@ export type LiveMenuItem = MenuItem & {
   categoryId: string;
   order: number;
   createdAt?: Timestamp;
+  discountEndsAt?: Timestamp;
 };
 export type LiveMenuCategory = {
   id: string;

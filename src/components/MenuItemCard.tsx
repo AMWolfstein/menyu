@@ -1,6 +1,8 @@
 import Image from "next/image";
+import type { Timestamp } from "firebase/firestore";
 import type { MenuItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
+import { isDiscountActive, getDiscountPercent } from "@/lib/discount";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 import { useCart } from "@/context/CartContext";
 
@@ -17,12 +19,16 @@ export default function MenuItemCard({
   currency,
   onSupplierClick,
 }: {
-  item: MenuItem & { supplierName?: string };
+  item: MenuItem & { supplierName?: string; discountEndsAt?: Timestamp };
   currency: string;
   onSupplierClick?: (supplierId: string, supplierName: string) => void;
 }) {
   const { items, addItem, setQty } = useCart();
   const qtyInCart = items.find((i) => i.id === item.id)?.qty ?? 0;
+
+  const hasDiscount = isDiscountActive(item);
+  const discountPercent = getDiscountPercent(item);
+  const payablePrice = hasDiscount ? item.discountPrice! : item.price;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface/60 transition-colors hover:border-gold/40 hover:bg-surface-2">
@@ -37,6 +43,11 @@ export default function MenuItemCard({
           />
         ) : (
           <ProductImagePlaceholder className="h-full w-full" />
+        )}
+        {hasDiscount && (
+          <span className="absolute left-2 top-2 z-10 rounded-full bg-chili px-2 py-1 text-xs font-bold text-white shadow">
+            خصم {discountPercent}%
+          </span>
         )}
       </div>
 
@@ -69,13 +80,28 @@ export default function MenuItemCard({
 
         <div className="mt-4 flex items-center gap-2">
           <div className="flex-1 rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
-            {formatPrice(item.price, currency)}
+            {hasDiscount ? (
+              <span className="flex items-center justify-center gap-1.5">
+                <span className="text-xs font-normal text-muted line-through">
+                  {formatPrice(item.price, currency)}
+                </span>
+                <span>{formatPrice(payablePrice, currency)}</span>
+              </span>
+            ) : (
+              formatPrice(item.price, currency)
+            )}
           </div>
 
           {qtyInCart === 0 ? (
             <button
               onClick={() =>
-                addItem({ id: item.id, name: item.name, price: item.price, imageUrl: item.imageUrl })
+                addItem({
+                  id: item.id,
+                  name: item.name,
+                  price: payablePrice,
+                  imageUrl: item.imageUrl,
+                  ...(hasDiscount && { originalPrice: item.price }),
+                })
               }
               className="shrink-0 rounded-lg bg-gold px-3 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft"
             >
