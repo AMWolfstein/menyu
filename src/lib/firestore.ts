@@ -65,6 +65,7 @@ function makeSimpleListApi(collectionName: string) {
 export const branchesApi = makeSimpleListApi("branches");
 export const deliveryZonesApi = makeSimpleListApi("deliveryZones");
 export const paymentMethodsApi = makeSimpleListApi("paymentMethods");
+export const suppliersApi = makeSimpleListApi("suppliers");
 
 // ---------- قراءة حية (real-time) ----------
 
@@ -142,6 +143,7 @@ export function addItem(data: {
   badge?: MenuItem["badge"];
   available?: boolean;
   imageUrl?: string;
+  supplierId?: string;
   order: number;
 }): Promise<void> {
   const id = data.name.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40) || crypto.randomUUID();

@@ -14,9 +14,11 @@ const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
 export default function MenuItemCard({
   item,
   currency,
+  onSupplierClick,
 }: {
-  item: MenuItem;
+  item: MenuItem & { supplierName?: string };
   currency: string;
+  onSupplierClick?: (supplierId: string, supplierName: string) => void;
 }) {
   const { items, addItem, setQty } = useCart();
   const qtyInCart = items.find((i) => i.id === item.id)?.qty ?? 0;
@@ -41,6 +43,15 @@ export default function MenuItemCard({
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-display text-base font-bold text-cream">
             {item.name}
+            {item.supplierName && (
+              <button
+                type="button"
+                onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
+                className="ms-1.5 text-xs font-normal text-muted hover:text-gold hover:underline"
+              >
+                ({item.supplierName})
+              </button>
+            )}
           </h3>
           {item.badge && (
             <span

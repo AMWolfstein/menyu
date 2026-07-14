@@ -8,6 +8,7 @@ export type MenuItem = {
   badge?: "الأكثر طلباً" | "جديد" | "نباتي" | "حار";
   available?: boolean;
   imageUrl?: string;
+  supplierId?: string;
 };
 
 export type MenuCategory = {
