@@ -1,15 +1,24 @@
 // نموذج بيانات المنيو المشترك بين طبقة البيانات، الواجهة، ولوحة التحكم.
 
+/** وزن/حجم بديل اختياري للصنف (1 كيلو، نص كيلو...) — بسعره الخاص. */
+export type MenuItemVariant = {
+  id: string;
+  label: string;
+  price: number;
+};
+
 export type MenuItem = {
   id: string;
   name: string;
   description: string;
-  price: number; // بالدينار العراقي
-  discountPrice?: number; // لازم يكون أقل من price
+  price: number; // بالدينار العراقي — أو سعر الوزن الافتراضي لو فيه variants
+  discountPrice?: number; // لازم يكون أقل من price؛ النسبة المحسوبة منه بتتطبق على كل الأوزان
+  variants?: MenuItemVariant[]; // اختياري — لو فاضي، الصنف بسعر واحد زي المعتاد
   badge?: "الأكثر طلباً" | "جديد" | "عادي" | "نباتي" | "حار";
   available?: boolean;
   imageUrl?: string;
   supplierId?: string;
+  orderCount?: number; // عدد مرات الطلب — بيتحدث تلقائي، معلوماتي بس للأدمن
 };
 
 export type MenuCategory = {

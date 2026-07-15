@@ -33,6 +33,7 @@ export default function MenuLive() {
   const [activeSupplier, setActiveSupplier] = useState<{ id: string; name: string } | null>(
     null
   );
+  const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
 
   const allItems = useMemo(() => {
@@ -50,6 +51,14 @@ export default function MenuLive() {
   }, [categories, suppliers]);
 
   const filteredItems = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      return allItems.filter(
+        (item) =>
+          item.name.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query)
+      );
+    }
     if (activeSupplier) {
       return allItems.filter((item) => item.supplierId === activeSupplier.id);
     }
@@ -61,7 +70,7 @@ export default function MenuLive() {
     return activeCategory === "all"
       ? allItems
       : allItems.filter((item) => item.categoryId === activeCategory);
-  }, [allItems, activeCategory, activeSupplier]);
+  }, [allItems, activeCategory, activeSupplier, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -111,6 +120,28 @@ export default function MenuLive() {
       />
 
       <div className="mx-auto max-w-3xl px-4 pb-24 pt-6">
+        <div className="relative mb-4">
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1);
+            }}
+            placeholder="ابحث عن صنف..."
+            className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute top-1/2 -translate-y-1/2 start-3 text-muted hover:text-cream"
+              aria-label="مسح البحث"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
         {activeSupplier && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
             <span className="text-cream">

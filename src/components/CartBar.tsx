@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { buildWhatsAppOrderUrl, emptyCheckoutInfo, type CheckoutInfo } from "@/lib/whatsapp";
-import { branchesApi, deliveryZonesApi, paymentMethodsApi } from "@/lib/firestore";
+import { branchesApi, deliveryZonesApi, paymentMethodsApi, saveOrder } from "@/lib/firestore";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { formatPrice } from "@/lib/format";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
@@ -40,6 +40,40 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
     if (window.confirm("إفراغ السلة بالكامل؟")) clearCart();
   };
 
+  const handleSend = () => {
+    const branchName = branches.find((b) => b.id === checkout.branchId)?.name;
+    const zoneName = deliveryZones.find((z) => z.id === checkout.zoneId)?.name;
+    const paymentMethodName = paymentMethods.find((p) => p.id === checkout.paymentMethodId)?.name;
+    const savings = items.reduce(
+      (sum, item) => sum + (item.originalPrice ? (item.originalPrice - item.price) * item.qty : 0),
+      0
+    );
+    // مش بننتظر النتيجة عشان ما نأخرش فتح واتساب — الحفظ بيحصل في الخلفية.
+    saveOrder({
+      items: items.map((item) => ({
+        itemId: item.itemId,
+        name: item.name,
+        variantLabel: item.variantLabel,
+        price: item.price,
+        originalPrice: item.originalPrice,
+        qty: item.qty,
+      })),
+      total,
+      savings,
+      orderType: checkout.orderType,
+      branchName,
+      zoneName,
+      customerName: checkout.name,
+      customerPhone: checkout.phone,
+      address: checkout.orderType === "delivery" ? checkout.address : undefined,
+      paymentMethodName,
+      notes: checkout.notes,
+    }).catch(() => {
+      // فشل حفظ السجل مش لازم يمنع إرسال الطلب نفسه للزبون.
+    });
+    clearCart();
+  };
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 max-h-[85vh] overflow-y-auto border-t border-line bg-surface/95 backdrop-blur">
       {expanded && (
@@ -63,7 +97,12 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-cream">{item.name}</p>
+                  <p className="truncate text-sm text-cream">
+                    {item.name}
+                    {item.variantLabel && (
+                      <span className="text-muted"> ({item.variantLabel})</span>
+                    )}
+                  </p>
                   <p className="text-xs text-muted">
                     {formatPrice(item.price * item.qty, restaurant.currency)}
                   </p>
@@ -127,7 +166,7 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => clearCart()}
+            onClick={handleSend}
             className="rounded-lg bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
           >
             إرسال الطلب عبر واتساب

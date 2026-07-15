@@ -3,8 +3,12 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 export type CartItem = {
+  /** مفتاح فريد للسطر في السلة — نفس معرّف الصنف عادةً، أو معرّف مركّب لو فيه وزن مختار (عشان أوزان الصنف الواحد تتفرق في السلة). */
   id: string;
+  /** معرّف صنف Firestore الحقيقي — دايمًا بيفضل نفسه بغض النظر عن الوزن المختار. */
+  itemId: string;
   name: string;
+  variantLabel?: string;
   price: number;
   /** السعر الأصلي قبل الخصم — بيتحط بس لو الصنف كان عليه خصم وقت الإضافة، تُستخدم لحساب "وفّرت" في رسالة الواتساب. */
   originalPrice?: number;
