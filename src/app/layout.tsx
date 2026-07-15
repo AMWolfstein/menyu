@@ -12,9 +12,12 @@ const cairo = Cairo({
   weight: ["400", "500", "600", "700", "800"],
 });
 
-export const viewport: Viewport = {
-  themeColor: "#0b1220",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const restaurant = await getRestaurantOnce();
+  return {
+    themeColor: restaurant?.themeColor || "#2f3c93",
+  };
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const restaurant = await getRestaurantOnce();

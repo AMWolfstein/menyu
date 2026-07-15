@@ -1,10 +1,12 @@
 // نموذج بيانات المنيو المشترك بين طبقة البيانات، الواجهة، ولوحة التحكم.
 
-/** وزن/حجم بديل اختياري للصنف (1 كيلو، نص كيلو...) — بسعره الخاص. */
+/** وزن/حجم بديل اختياري للصنف (1 كيلو، نص كيلو...) — بسعره الخاص، وخصمه
+ * الخاص لو موجود (تاريخ الانتهاء مشترك مع باقي الصنف عبر discountEndsAt). */
 export type MenuItemVariant = {
   id: string;
   label: string;
   price: number;
+  discountPrice?: number;
 };
 
 export type MenuItem = {
@@ -34,6 +36,7 @@ export type Restaurant = {
   currency: string;
   phone: string;
   imageUrl?: string;
+  themeColor?: string; // اللون الأساسي (theme_color) لتطبيق الـ PWA — hex
   branchesEnabled?: boolean;
   facebookUrl?: string;
   whatsappUrl?: string;

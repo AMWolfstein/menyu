@@ -2,10 +2,16 @@ import type { MetadataRoute } from "next";
 import { getRestaurantOnce } from "@/lib/firestore";
 import { cloudinaryIconUrl } from "@/lib/cloudinaryIcon";
 
+// ديناميكي بالكامل — بيتقرأ من Firestore مع كل طلب بدل ما يتجمد وقت الـ
+// build، عشان أي تعديل في اسم/شعار/لون المطعم من لوحة التحكم يوصل لتطبيق
+// الـ PWA من غير الحاجة لعمل deploy جديد على Vercel.
+export const dynamic = "force-dynamic";
+
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const restaurant = await getRestaurantOnce();
   const name = restaurant?.name ?? "المنيو الرقمي";
   const logoUrl = restaurant?.imageUrl;
+  const themeColor = restaurant?.themeColor || "#2f3c93";
 
   return {
     name,
@@ -14,8 +20,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#0b1220",
-    theme_color: "#0b1220",
+    background_color: "#f4f8fc",
+    theme_color: themeColor,
     lang: "ar",
     dir: "rtl",
     icons: logoUrl

@@ -4,7 +4,12 @@ import { useRef, useState } from "react";
 import type { LiveMenuCategory } from "@/hooks/useMenuData";
 import type { Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
-import { isDiscountActive, getDiscountPercent } from "@/lib/discount";
+import {
+  isDiscountActive,
+  getDiscountPercent,
+  getVariantDiscountFields,
+  pickCheapestVariant,
+} from "@/lib/discount";
 
 // ملاحظة: العناصر جوّا المنطقة اللي بتتحوّل لصورة (posterRef) بتستخدم inline
 // styles بس، مش كلاسات Tailwind — Tailwind v4 بيولّد ألوان بصيغة lab()/oklch()
@@ -102,8 +107,9 @@ export default function MenuPosterCard({
 
         <ul style={{ marginTop: 20, padding: 0, listStyle: "none" }}>
           {items.map((item, index) => {
-            const discounted = isDiscountActive(item);
-            const percent = getDiscountPercent(item);
+            const fields = getVariantDiscountFields(item, pickCheapestVariant(item));
+            const discounted = isDiscountActive(fields);
+            const percent = getDiscountPercent(fields);
             return (
               <li
                 key={item.id}
@@ -138,7 +144,7 @@ export default function MenuPosterCard({
                     <span
                       style={{ fontSize: 12, color: COLORS.gray, textDecoration: "line-through" }}
                     >
-                      {formatPrice(item.price, restaurant.currency)}
+                      {formatPrice(fields.price, restaurant.currency)}
                     </span>
                   )}
                   <span
@@ -148,7 +154,7 @@ export default function MenuPosterCard({
                       color: discounted ? COLORS.red : COLORS.navy,
                     }}
                   >
-                    {formatPrice(discounted ? item.discountPrice! : item.price, restaurant.currency)}
+                    {formatPrice(discounted ? fields.discountPrice! : fields.price, restaurant.currency)}
                   </span>
                 </span>
               </li>

@@ -5,7 +5,7 @@ import Image from "next/image";
 import type { Timestamp } from "firebase/firestore";
 import type { MenuItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
-import { isDiscountActive, getDiscountPercent } from "@/lib/discount";
+import { isDiscountActive, getDiscountPercent, getVariantDiscountFields } from "@/lib/discount";
 import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 import { useCart } from "@/context/CartContext";
 
@@ -40,16 +40,17 @@ export default function MenuItemCard({
   const cartLineId = selectedVariant ? `${item.id}-${selectedVariant.id}` : item.id;
   const qtyInCart = items.find((i) => i.id === cartLineId)?.qty ?? 0;
 
-  const hasDiscount = isDiscountActive(item);
-  const discountPercent = getDiscountPercent(item);
+  const discountFields = getVariantDiscountFields(item, selectedVariant ?? undefined);
+  const hasDiscount = isDiscountActive(discountFields);
+  const discountPercent = getDiscountPercent(discountFields);
   const basePrice = selectedVariant ? selectedVariant.price : item.price;
   const payablePrice = hasDiscount
     ? Math.round(basePrice * (1 - discountPercent / 100))
     : basePrice;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface/60 transition-colors hover:border-gold/40 hover:bg-surface-2">
-      <div className="relative h-48 w-full shrink-0">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+      <div className="relative aspect-square w-full shrink-0 bg-surface-2">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
@@ -62,40 +63,38 @@ export default function MenuItemCard({
           <ProductImagePlaceholder className="h-full w-full" logoUrl={logoUrl} />
         )}
         {hasDiscount && (
-          <span className="absolute left-2 top-2 z-10 rounded-full bg-chili px-2 py-1 text-xs font-bold text-white shadow">
+          <span className="absolute start-2 top-2 z-10 rounded-full bg-chili px-2 py-1 text-xs font-bold text-white shadow">
             خصم {discountPercent}%
+          </span>
+        )}
+        {item.badge && (
+          <span
+            className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
+          >
+            {item.badge}
           </span>
         )}
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-display text-base font-bold text-cream">
-            {item.name}
-            {item.supplierName && (
-              <button
-                type="button"
-                onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
-                className="ms-1.5 text-xs font-normal text-muted hover:text-gold hover:underline"
-              >
-                ({item.supplierName})
-              </button>
-            )}
-          </h3>
-          {item.badge && (
-            <span
-              className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${badgeStyles[item.badge]}`}
+        <h3 className="font-display text-base font-bold text-cream">
+          {item.name}
+          {item.supplierName && (
+            <button
+              type="button"
+              onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
+              className="ms-1.5 text-xs font-normal text-muted hover:text-gold hover:underline"
             >
-              {item.badge}
-            </span>
+              ({item.supplierName})
+            </button>
           )}
-        </div>
+        </h3>
 
         <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
           {item.description}
         </p>
 
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-4 flex flex-col gap-3">
           {hasVariants && (
             <div className="flex flex-wrap gap-1.5">
               {variants.map((v) => (
@@ -115,17 +114,15 @@ export default function MenuItemCard({
             </div>
           )}
 
-          <div className="rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
-            {hasDiscount ? (
-              <span className="flex items-center justify-center gap-1.5">
-                <span className="text-xs font-normal text-muted line-through">
-                  {formatPrice(basePrice, currency)}
-                </span>
-                <span>{formatPrice(payablePrice, currency)}</span>
+          <div className="flex items-baseline gap-2">
+            {hasDiscount && (
+              <span className="text-xs text-muted line-through">
+                {formatPrice(basePrice, currency)}
               </span>
-            ) : (
-              formatPrice(basePrice, currency)
             )}
+            <span className="font-display text-lg font-extrabold text-cream">
+              {formatPrice(payablePrice, currency)}
+            </span>
           </div>
 
           {qtyInCart === 0 ? (
@@ -141,7 +138,7 @@ export default function MenuItemCard({
                   ...(hasDiscount && { originalPrice: basePrice }),
                 })
               }
-              className="w-full rounded-lg bg-gold px-3 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft"
+              className="w-full rounded-lg bg-gold px-3 py-2.5 text-sm font-bold text-base transition-all duration-200 hover:bg-gold-soft active:scale-95"
             >
               + أضف
             </button>
@@ -149,7 +146,7 @@ export default function MenuItemCard({
             <div className="flex w-full items-center justify-center gap-1 rounded-lg border border-gold/40">
               <button
                 onClick={() => setQty(cartLineId, qtyInCart - 1)}
-                className="flex-1 py-2 text-gold hover:text-gold-soft"
+                className="flex-1 py-2.5 text-gold transition-all duration-200 hover:text-gold-soft active:scale-95"
                 aria-label="إنقاص الكمية"
               >
                 −
@@ -157,7 +154,7 @@ export default function MenuItemCard({
               <span className="min-w-6 text-center text-sm text-cream">{qtyInCart}</span>
               <button
                 onClick={() => setQty(cartLineId, qtyInCart + 1)}
-                className="flex-1 py-2 text-gold hover:text-gold-soft"
+                className="flex-1 py-2.5 text-gold transition-all duration-200 hover:text-gold-soft active:scale-95"
                 aria-label="زيادة الكمية"
               >
                 +

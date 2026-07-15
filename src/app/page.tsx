@@ -1,5 +1,6 @@
 import MenuLive from "@/components/MenuLive";
 import { getRestaurantOnce, getMenuOnce } from "@/lib/firestore";
+import { getVariantDiscountFields, pickCheapestVariant, isDiscountActive } from "@/lib/discount";
 
 export default async function Home() {
   // قراءة مرة واحدة على السيرفر (بدون اشتراك حي) — بس لبناء بيانات SEO
@@ -19,18 +20,21 @@ export default async function Home() {
           "@type": "OfferCatalog",
           name: "المنيو",
           itemListElement: categories.flatMap((category) =>
-            category.items.map((item) => ({
-              "@type": "Offer",
-              price: item.discountPrice ?? item.price,
-              priceCurrency: "EGP",
-              itemOffered: {
-                "@type": "Product",
-                name: item.name,
-                description: item.description,
-                ...(item.imageUrl && { image: item.imageUrl }),
-                category: category.name,
-              },
-            }))
+            category.items.map((item) => {
+              const fields = getVariantDiscountFields(item, pickCheapestVariant(item));
+              return {
+                "@type": "Offer",
+                price: isDiscountActive(fields) ? fields.discountPrice : fields.price,
+                priceCurrency: "EGP",
+                itemOffered: {
+                  "@type": "Product",
+                  name: item.name,
+                  description: item.description,
+                  ...(item.imageUrl && { image: item.imageUrl }),
+                  category: category.name,
+                },
+              };
+            })
           ),
         },
       }
