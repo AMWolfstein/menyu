@@ -3,17 +3,18 @@ import type { Restaurant } from "@/types/menu";
 function IconLink({
   href,
   label,
+  external,
   children,
 }: {
   href: string;
   label: string;
+  external?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...(external && { target: "_blank", rel: "noopener noreferrer" })}
       aria-label={label}
       className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface text-muted transition-colors hover:border-gold/40 hover:text-gold"
     >
@@ -95,15 +96,26 @@ export default function SocialLinks({ restaurant }: { restaurant: Restaurant }) 
     (l): l is typeof l & { url: string } => !!l.url
   );
 
-  if (visible.length === 0) return null;
-
   return (
     <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
       {visible.map((l) => (
-        <IconLink key={l.key} href={l.url} label={l.label}>
+        <IconLink key={l.key} href={l.url} label={l.label} external>
           {l.icon}
         </IconLink>
       ))}
+      <IconLink href="/menu" label="صور المنيو للمشاركة">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          className="h-5 w-5"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2.5" />
+          <path d="M3 9h18M8 3v6" strokeLinecap="round" />
+          <path d="M7 14h5M7 17h8" strokeLinecap="round" />
+        </svg>
+      </IconLink>
     </div>
   );
 }
