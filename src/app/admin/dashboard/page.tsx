@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import {
@@ -19,12 +18,22 @@ import RestaurantForm from "@/components/admin/RestaurantForm";
 import CategoryForm from "@/components/admin/CategoryForm";
 import ItemForm from "@/components/admin/ItemForm";
 import SimpleListManager from "@/components/admin/SimpleListManager";
+import OrdersPanel from "@/components/admin/OrdersPanel";
+
+const TABS = [
+  { id: "items", label: "الأصناف والفئات" },
+  { id: "orders", label: "سجل الطلبات" },
+  { id: "settings", label: "الإعدادات" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>("items");
 
   const { restaurant, categories, loading } = useMenuData();
   const { items: branches } = useSimpleList(branchesApi);
@@ -59,45 +68,71 @@ export default function AdminDashboardPage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-extrabold text-cream">لوحة التحكم</h1>
-          <div className="flex items-center gap-4">
-            <Link href="/admin/orders" className="text-sm text-gold hover:text-gold-soft">
-              سجل الطلبات
-            </Link>
-            <button
-              onClick={() => signOut(auth)}
-              className="text-sm text-muted hover:text-cream"
-            >
-              تسجيل الخروج
-            </button>
-          </div>
+          <button onClick={() => signOut(auth)} className="text-sm text-muted hover:text-cream">
+            تسجيل الخروج
+          </button>
         </div>
 
-        {!loading && categories.length === 0 && (
-          <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 text-sm text-gold-soft">
-            <p>لا توجد بيانات في المنيو بعد.</p>
+        <div className="flex gap-2 border-b border-line">
+          {TABS.map((tab) => (
             <button
-              onClick={handleSeed}
-              disabled={seeding}
-              className="mt-3 rounded-lg bg-gold px-4 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft disabled:opacity-50"
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "border-gold text-gold"
+                  : "border-transparent text-muted hover:text-cream"
+              }`}
             >
-              {seeding ? "جارٍ التعبئة..." : "تعبئة البيانات الأولية"}
+              {tab.label}
             </button>
+          ))}
+        </div>
+
+        {activeTab === "items" && (
+          <div className="space-y-6">
+            {!loading && categories.length === 0 && (
+              <div className="rounded-xl border border-gold/40 bg-gold/10 p-4 text-sm text-gold-soft">
+                <p>لا توجد بيانات في المنيو بعد.</p>
+                <button
+                  onClick={handleSeed}
+                  disabled={seeding}
+                  className="mt-3 rounded-lg bg-gold px-4 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft disabled:opacity-50"
+                >
+                  {seeding ? "جارٍ التعبئة..." : "تعبئة البيانات الأولية"}
+                </button>
+              </div>
+            )}
+            <CategoryForm categories={categories} />
+            <ItemForm
+              categories={categories}
+              currency={restaurant?.currency ?? ""}
+              suppliers={suppliers}
+            />
           </div>
         )}
 
-        {!loading && (
-          <RestaurantForm restaurant={restaurant} key={restaurant ? "ready" : "empty"} />
+        {activeTab === "orders" && <OrdersPanel currency={restaurant?.currency ?? ""} />}
+
+        {activeTab === "settings" && (
+          <div className="space-y-6">
+            {!loading && (
+              <RestaurantForm restaurant={restaurant} key={restaurant ? "ready" : "empty"} />
+            )}
+            <SimpleListManager title="الموردين" items={suppliers} api={suppliersApi} />
+            <SimpleListManager title="الفروع" items={branches} api={branchesApi} />
+            <SimpleListManager
+              title="مناطق التوصيل"
+              items={deliveryZones}
+              api={deliveryZonesApi}
+            />
+            <SimpleListManager
+              title="طرق الدفع"
+              items={paymentMethods}
+              api={paymentMethodsApi}
+            />
+          </div>
         )}
-        <CategoryForm categories={categories} />
-        <ItemForm
-          categories={categories}
-          currency={restaurant?.currency ?? ""}
-          suppliers={suppliers}
-        />
-        <SimpleListManager title="الموردين" items={suppliers} api={suppliersApi} />
-        <SimpleListManager title="الفروع" items={branches} api={branchesApi} />
-        <SimpleListManager title="مناطق التوصيل" items={deliveryZones} api={deliveryZonesApi} />
-        <SimpleListManager title="طرق الدفع" items={paymentMethods} api={paymentMethodsApi} />
       </div>
     </main>
   );
