@@ -92,7 +92,7 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
                   {item.imageUrl ? (
                     <Image src={item.imageUrl} alt="" fill sizes="40px" className="object-cover" />
                   ) : (
-                    <ProductImagePlaceholder className="h-full w-full" />
+                    <ProductImagePlaceholder className="h-full w-full" logoUrl={restaurant.imageUrl} />
                   )}
                 </div>
 

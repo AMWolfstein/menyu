@@ -21,10 +21,12 @@ export default function MenuItemCard({
   item,
   currency,
   onSupplierClick,
+  logoUrl,
 }: {
   item: MenuItem & { supplierName?: string; discountEndsAt?: Timestamp };
   currency: string;
   onSupplierClick?: (supplierId: string, supplierName: string) => void;
+  logoUrl?: string;
 }) {
   const { items, addItem, setQty } = useCart();
 
@@ -57,7 +59,7 @@ export default function MenuItemCard({
             className="object-cover"
           />
         ) : (
-          <ProductImagePlaceholder className="h-full w-full" />
+          <ProductImagePlaceholder className="h-full w-full" logoUrl={logoUrl} />
         )}
         {hasDiscount && (
           <span className="absolute left-2 top-2 z-10 rounded-full bg-chili px-2 py-1 text-xs font-bold text-white shadow">

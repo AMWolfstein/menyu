@@ -10,11 +10,13 @@ export default function ImageUploadField({
   value,
   onChange,
   folder,
+  logoUrl,
 }: {
   label: string;
   value: string | undefined;
   onChange: (url: string) => void;
   folder: "items" | "restaurant";
+  logoUrl?: string;
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function ImageUploadField({
           {value ? (
             <Image src={value} alt="" fill sizes="64px" className="object-cover" />
           ) : (
-            <ProductImagePlaceholder className="h-full w-full" />
+            <ProductImagePlaceholder className="h-full w-full" logoUrl={logoUrl} />
           )}
         </div>
         <div className="flex flex-col gap-1">
