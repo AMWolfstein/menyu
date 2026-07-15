@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { LiveMenuCategory } from "@/hooks/useMenuData";
-import type { Restaurant } from "@/types/menu";
+import type { PosterLink, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import {
   isDiscountActive,
@@ -10,6 +10,7 @@ import {
   getVariantDiscountFields,
   pickCheapestVariant,
 } from "@/lib/discount";
+import PosterFooterLinks from "@/components/PosterFooterLinks";
 
 // نفس ملاحظة MenuPosterCard.tsx: كل الألوان جوّا المنطقة اللي بتتحوّل لصورة
 // لازم تبقى inline styles، مش كلاسات Tailwind (مشكلة توافق html2canvas مع
@@ -29,9 +30,11 @@ const COLORS = {
 export default function CombinedMenuPoster({
   categories,
   restaurant,
+  posterLinks,
 }: {
   categories: LiveMenuCategory[];
   restaurant: Restaurant;
+  posterLinks: PosterLink[];
 }) {
   const posterRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -78,9 +81,18 @@ export default function CombinedMenuPoster({
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: COLORS.navy }}>
-            {restaurant.name}
-          </h1>
+          {restaurant.imageUrl ? (
+            <img
+              src={restaurant.imageUrl}
+              alt={restaurant.name}
+              crossOrigin="anonymous"
+              style={{ height: 64, width: "auto", margin: "0 auto", display: "block" }}
+            />
+          ) : (
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: COLORS.navy }}>
+              {restaurant.name}
+            </h1>
+          )}
           {restaurant.tagline && (
             <p style={{ margin: "6px 0 0", fontSize: 13, color: COLORS.muted }}>
               {restaurant.tagline}
@@ -176,14 +188,7 @@ export default function CombinedMenuPoster({
           </div>
         ))}
 
-        {restaurant.phone && (
-          <p
-            dir="ltr"
-            style={{ marginTop: 28, marginBottom: 0, textAlign: "center", fontSize: 12, color: COLORS.muted }}
-          >
-            {restaurant.phone}
-          </p>
-        )}
+        <PosterFooterLinks links={posterLinks} colors={COLORS} />
       </div>
 
       <button

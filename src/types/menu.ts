@@ -1,12 +1,15 @@
 // نموذج بيانات المنيو المشترك بين طبقة البيانات، الواجهة، ولوحة التحكم.
 
-/** وزن/حجم بديل اختياري للصنف (1 كيلو، نص كيلو...) — بسعره الخاص، وخصمه
- * الخاص لو موجود (تاريخ الانتهاء مشترك مع باقي الصنف عبر discountEndsAt). */
+import type { Timestamp } from "firebase/firestore";
+
+/** وزن/حجم بديل اختياري للصنف (1 كيلو، نص كيلو...) — بسعره وخصمه وتاريخ
+ * انتهاء خصمه الخاصين بيه، مستقلين تمامًا عن باقي الأوزان. */
 export type MenuItemVariant = {
   id: string;
   label: string;
   price: number;
   discountPrice?: number;
+  discountEndsAt?: Timestamp;
 };
 
 export type MenuItem = {
@@ -49,5 +52,21 @@ export type Restaurant = {
 export type SimpleListItem = {
   id: string;
   name: string;
+  order: number;
+};
+
+/** رابط بأيقونة يظهر في تذييل صور المنيو المشاركة (بدل رقم الهاتف الثابت). */
+export type PosterLinkPlatform =
+  | "whatsapp"
+  | "facebook"
+  | "instagram"
+  | "tiktok"
+  | "phone"
+  | "location";
+
+export type PosterLink = {
+  id: string;
+  platform: PosterLinkPlatform;
+  label: string;
   order: number;
 };

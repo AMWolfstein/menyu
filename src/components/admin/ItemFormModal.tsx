@@ -15,45 +15,72 @@ const labelClass = "mb-1 block text-xs font-medium text-muted";
 
 const badges: NonNullable<MenuItem["badge"]>[] = ["عادي", "نباتي", "حار"];
 
-type PriceRowDraft = { id: string; label: string; price: string; discountPrice: string };
+type PriceRowDraft = {
+  id: string;
+  label: string;
+  price: string;
+  discountPrice: string;
+  discountEndsAt: string;
+};
 
 type ItemDraft = {
   name: string;
   description: string;
   priceRows: PriceRowDraft[];
-  discountPrice: string;
-  discountEndsAt: string;
   badge: string;
   categoryId: string;
   imageUrl: string;
   supplierId: string;
 };
 
-/** السعر بعد الخصم اختياري، لكن لازم يكون رقم صحيح أقل من السعر الأساسي. */
+const emptyRow = (): PriceRowDraft => ({
+  id: crypto.randomUUID(),
+  label: "",
+  price: "",
+  discountPrice: "",
+  discountEndsAt: "",
+});
+
+/** السعر بعد الخصم اختياري، لكن لازم يكون رقم صحيح أقل من سعر نفس الصف. */
 function isValidDiscount(price: number, discountPrice: string): boolean {
   if (!discountPrice.trim()) return true;
   const d = Number(discountPrice);
   return Number.isFinite(d) && d > 0 && d < price;
 }
 
+function toTimestamp(dateStr: string): Timestamp {
+  return Timestamp.fromDate(new Date(`${dateStr}T23:59:59`));
+}
+
 /**
- * السعر والأوزان بقوا حاجة واحدة: لو صف واحد بس، الصنف بسعر ثابت (variants
- * فاضية) وخصمه على مستوى الصنف نفسه. لو أكتر من صف، كل صف بيتحول لوزن
- * (variant) بخصمه الخاص لو موجود — الصف الأول هو نفسه اللي بيتسجل كـ
- * `price` الأساسي، عشان باقي المشروع (السلة، السيو) يفضل شغال زي ما هو.
+ * كل صف (وزن) مستقل بالكامل: سعره وخصمه وتاريخ انتهاء خصمه. لو صف واحد بس
+ * بيتسجل مباشرة كـ `price`/`discountPrice`/`discountEndsAt` على مستوى
+ * الصنف نفسه (زي ما كان الوضع دايمًا للأصناف البسيطة)، ولو أكتر من صف كلهم
+ * بيتحولوا لـ variants كل واحد بخصمه الخاص.
  */
-function cleanPriceRows(rows: PriceRowDraft[]): { price: number; variants: MenuItemVariant[] } {
+function cleanPriceRows(rows: PriceRowDraft[]) {
   const valid = rows.filter((r) => Number.isFinite(Number(r.price)) && Number(r.price) > 0);
+
   if (valid.length <= 1) {
-    return { price: valid[0] ? Number(valid[0].price) : 0, variants: [] };
+    const r = valid[0];
+    return {
+      price: r ? Number(r.price) : 0,
+      discountPrice: r?.discountPrice.trim() ? Number(r.discountPrice) : undefined,
+      discountEndsAt: r?.discountEndsAt ? toTimestamp(r.discountEndsAt) : undefined,
+      variants: [] as MenuItemVariant[],
+    };
   }
+
   return {
     price: Number(valid[0].price),
+    discountPrice: undefined,
+    discountEndsAt: undefined,
     variants: valid.map((r) => ({
       id: r.id,
       label: r.label.trim(),
       price: Number(r.price),
       ...(r.discountPrice.trim() && { discountPrice: Number(r.discountPrice) }),
+      ...(r.discountEndsAt && { discountEndsAt: toTimestamp(r.discountEndsAt) }),
     })),
   };
 }
@@ -67,59 +94,34 @@ function PriceRowsEditor({
 }) {
   const hasMultiple = rows.length > 1;
 
-  const addRow = () =>
-    onChange([...rows, { id: crypto.randomUUID(), label: "", price: "", discountPrice: "" }]);
-  const updateRow = (id: string, field: "label" | "price" | "discountPrice", value: string) =>
+  const addRow = () => onChange([...rows, emptyRow()]);
+  const updateRow = (id: string, field: keyof Omit<PriceRowDraft, "id">, value: string) =>
     onChange(rows.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
   const removeRow = (id: string) => onChange(rows.filter((r) => r.id !== id));
 
-  if (!hasMultiple) {
-    return (
-      <div className="flex flex-col gap-2 rounded-lg border border-line bg-base/30 p-3">
-        <p className={labelClass}>السعر</p>
-        <div className="flex items-center gap-2">
-          <input
-            className={inputClass}
-            type="number"
-            placeholder="السعر"
-            value={rows[0]?.price ?? ""}
-            onChange={(e) => updateRow(rows[0].id, "price", e.target.value)}
-            required
-          />
-        </div>
-        <button
-          type="button"
-          onClick={addRow}
-          className="flex w-fit items-center gap-1 text-xs text-gold hover:text-gold-soft"
-        >
-          <PlusIcon className="h-3.5 w-3.5" />
-          إضافة وزن/سعر تاني
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-line bg-base/30 p-3">
-      <p className={labelClass}>الأسعار والأوزان</p>
+      <p className={labelClass}>{hasMultiple ? "الأسعار والأوزان" : "السعر"}</p>
       {rows.map((row) => (
         <div key={row.id} className="flex flex-col gap-1.5 rounded-lg border border-line/60 p-2">
           <div className="flex items-center gap-2">
             <input
               className={inputClass}
-              placeholder="مثال: 1 كيلو"
+              placeholder={hasMultiple ? "مثال: 1 كيلو" : "الوزن (اختياري لو سعر واحد)"}
               value={row.label}
               onChange={(e) => updateRow(row.id, "label", e.target.value)}
-              required
+              required={hasMultiple}
             />
-            <button
-              type="button"
-              onClick={() => removeRow(row.id)}
-              aria-label="حذف الوزن"
-              className="shrink-0 rounded-lg p-2 text-chili transition-colors hover:bg-chili/10"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
+            {hasMultiple && (
+              <button
+                type="button"
+                onClick={() => removeRow(row.id)}
+                aria-label="حذف الوزن"
+                className="shrink-0 rounded-lg p-2 text-chili transition-colors hover:bg-chili/10"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <input
@@ -136,6 +138,17 @@ function PriceRowsEditor({
               placeholder="خصم (اختياري)"
               value={row.discountPrice}
               onChange={(e) => updateRow(row.id, "discountPrice", e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] text-muted">
+              تاريخ انتهاء الخصم (اختياري)
+            </label>
+            <input
+              className={inputClass}
+              type="date"
+              value={row.discountEndsAt}
+              onChange={(e) => updateRow(row.id, "discountEndsAt", e.target.value)}
             />
           </div>
         </div>
@@ -183,19 +196,21 @@ export default function ItemFormModal({
                   label: v.label,
                   price: String(v.price),
                   discountPrice: v.discountPrice != null ? String(v.discountPrice) : "",
+                  discountEndsAt: v.discountEndsAt
+                    ? v.discountEndsAt.toDate().toISOString().slice(0, 10)
+                    : "",
                 }))
               : [
                   {
                     id: crypto.randomUUID(),
                     label: "",
                     price: String(item.price),
-                    discountPrice: "",
+                    discountPrice: item.discountPrice != null ? String(item.discountPrice) : "",
+                    discountEndsAt: item.discountEndsAt
+                      ? item.discountEndsAt.toDate().toISOString().slice(0, 10)
+                      : "",
                   },
                 ],
-          discountPrice: item.discountPrice != null ? String(item.discountPrice) : "",
-          discountEndsAt: item.discountEndsAt
-            ? item.discountEndsAt.toDate().toISOString().slice(0, 10)
-            : "",
           badge: item.badge ?? "عادي",
           categoryId: item.categoryId,
           imageUrl: item.imageUrl ?? "",
@@ -204,9 +219,7 @@ export default function ItemFormModal({
       : {
           name: "",
           description: "",
-          priceRows: [{ id: crypto.randomUUID(), label: "", price: "", discountPrice: "" }],
-          discountPrice: "",
-          discountEndsAt: "",
+          priceRows: [emptyRow()],
           badge: "عادي",
           categoryId,
           imageUrl: "",
@@ -215,30 +228,26 @@ export default function ItemFormModal({
   );
   const [saving, setSaving] = useState(false);
 
-  const isMulti = draft.priceRows.length > 1;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!draft.name.trim()) return;
-    const { price, variants } = cleanPriceRows(draft.priceRows);
-    if (price <= 0) {
+
+    for (const r of draft.priceRows) {
+      if (!Number.isFinite(Number(r.price)) || Number(r.price) <= 0) continue;
+      if (!isValidDiscount(Number(r.price), r.discountPrice)) {
+        window.alert(
+          `السعر بعد الخصم لـ"${r.label || "السعر الأساسي"}" لازم يكون رقم أقل من سعره`
+        );
+        return;
+      }
+    }
+
+    const cleaned = cleanPriceRows(draft.priceRows);
+    if (cleaned.price <= 0) {
       window.alert("لازم تحط سعر واحد صحيح على الأقل");
       return;
     }
-    if (isMulti) {
-      for (const row of draft.priceRows) {
-        if (!Number.isFinite(Number(row.price)) || Number(row.price) <= 0) continue;
-        if (!isValidDiscount(Number(row.price), row.discountPrice)) {
-          window.alert(
-            `السعر بعد الخصم لوزن "${row.label || "بدون اسم"}" لازم يكون رقم أقل من سعره`
-          );
-          return;
-        }
-      }
-    } else if (!isValidDiscount(price, draft.discountPrice)) {
-      window.alert("السعر بعد الخصم لازم يكون رقم أقل من السعر الأساسي");
-      return;
-    }
+
     setSaving(true);
     if (item) {
       // deleteField() actually removes the field; a literal `undefined` would
@@ -246,16 +255,14 @@ export default function ItemFormModal({
       await updateItem(item.id, {
         name: draft.name,
         description: draft.description,
-        price,
+        price: cleaned.price,
         categoryId: draft.categoryId,
         badge: draft.badge ? (draft.badge as MenuItem["badge"]) : deleteField(),
         imageUrl: draft.imageUrl ? draft.imageUrl : deleteField(),
         supplierId: draft.supplierId ? draft.supplierId : deleteField(),
-        discountPrice: !isMulti && draft.discountPrice ? Number(draft.discountPrice) : deleteField(),
-        discountEndsAt: draft.discountEndsAt
-          ? Timestamp.fromDate(new Date(`${draft.discountEndsAt}T23:59:59`))
-          : deleteField(),
-        variants: variants.length > 0 ? variants : deleteField(),
+        discountPrice: cleaned.discountPrice != null ? cleaned.discountPrice : deleteField(),
+        discountEndsAt: cleaned.discountEndsAt ?? deleteField(),
+        variants: cleaned.variants.length > 0 ? cleaned.variants : deleteField(),
       });
     } else {
       // Firestore rejects literal `undefined` field values, so optional fields
@@ -264,17 +271,15 @@ export default function ItemFormModal({
         categoryId,
         name: draft.name,
         description: draft.description,
-        price,
+        price: cleaned.price,
         available: true,
         order: targetCategory?.items.length ?? 0,
         ...(draft.badge && { badge: draft.badge as MenuItem["badge"] }),
         ...(draft.imageUrl && { imageUrl: draft.imageUrl }),
         ...(draft.supplierId && { supplierId: draft.supplierId }),
-        ...(!isMulti && draft.discountPrice && { discountPrice: Number(draft.discountPrice) }),
-        ...(draft.discountEndsAt && {
-          discountEndsAt: Timestamp.fromDate(new Date(`${draft.discountEndsAt}T23:59:59`)),
-        }),
-        ...(variants.length > 0 && { variants }),
+        ...(cleaned.discountPrice != null && { discountPrice: cleaned.discountPrice }),
+        ...(cleaned.discountEndsAt && { discountEndsAt: cleaned.discountEndsAt }),
+        ...(cleaned.variants.length > 0 && { variants: cleaned.variants }),
       });
     }
     setSaving(false);
@@ -314,42 +319,6 @@ export default function ItemFormModal({
           rows={draft.priceRows}
           onChange={(priceRows) => setDraft({ ...draft, priceRows })}
         />
-
-        {isMulti ? (
-          <div>
-            <label className={labelClass}>تاريخ انتهاء الخصم (اختياري)</label>
-            <input
-              className={inputClass}
-              type="date"
-              value={draft.discountEndsAt}
-              onChange={(e) => setDraft({ ...draft, discountEndsAt: e.target.value })}
-            />
-            <p className="mt-1 text-xs text-muted">
-              بينطبق على أي وزن حطيت له خصم فوق.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelClass}>السعر بعد الخصم (اختياري)</label>
-              <input
-                className={inputClass}
-                type="number"
-                value={draft.discountPrice}
-                onChange={(e) => setDraft({ ...draft, discountPrice: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>تاريخ انتهاء الخصم (اختياري)</label>
-              <input
-                className={inputClass}
-                type="date"
-                value={draft.discountEndsAt}
-                onChange={(e) => setDraft({ ...draft, discountEndsAt: e.target.value })}
-              />
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>

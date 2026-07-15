@@ -18,10 +18,12 @@ import RestaurantForm from "@/components/admin/RestaurantForm";
 import ItemsPanel from "@/components/admin/ItemsPanel";
 import SimpleListManager from "@/components/admin/SimpleListManager";
 import OrdersPanel from "@/components/admin/OrdersPanel";
+import PosterLinksManager from "@/components/admin/PosterLinksManager";
 
 const TABS = [
   { id: "items", label: "الأصناف والفئات" },
   { id: "orders", label: "سجل الطلبات" },
+  { id: "poster", label: "روابط صور المشاركة" },
   { id: "settings", label: "الإعدادات" },
 ] as const;
 
@@ -108,17 +110,19 @@ export default function AdminDashboardPage() {
               suppliers={suppliers}
               restaurantLogoUrl={restaurant?.imageUrl}
             />
+            <SimpleListManager title="الموردين" items={suppliers} api={suppliersApi} />
           </div>
         )}
 
         {activeTab === "orders" && <OrdersPanel currency={restaurant?.currency ?? ""} />}
+
+        {activeTab === "poster" && <PosterLinksManager />}
 
         {activeTab === "settings" && (
           <div className="space-y-6">
             {!loading && (
               <RestaurantForm restaurant={restaurant} key={restaurant ? "ready" : "empty"} />
             )}
-            <SimpleListManager title="الموردين" items={suppliers} api={suppliersApi} />
             <SimpleListManager title="الفروع" items={branches} api={branchesApi} />
             <SimpleListManager
               title="مناطق التوصيل"
