@@ -19,7 +19,7 @@ import {
   type UpdateData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { MenuCategory, MenuItem, Restaurant, SimpleListItem } from "@/types/menu";
+import type { MenuCategory, MenuItem, PosterLink, Restaurant, SimpleListItem } from "@/types/menu";
 import type { Order } from "@/types/order";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
@@ -71,6 +71,36 @@ export const branchesApi = makeSimpleListApi("branches");
 export const deliveryZonesApi = makeSimpleListApi("deliveryZones");
 export const paymentMethodsApi = makeSimpleListApi("paymentMethods");
 export const suppliersApi = makeSimpleListApi("suppliers");
+
+// ---------- روابط تذييل صور المشاركة (poster links) ----------
+
+const posterLinksCol = collection(db, "posterLinks");
+
+export function subscribePosterLinks(cb: (links: PosterLink[]) => void): Unsubscribe {
+  return onSnapshot(posterLinksCol, (snap) => {
+    const links = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<PosterLink, "id">) }));
+    cb(links.sort((a, b) => a.order - b.order));
+  });
+}
+
+export function addPosterLink(data: {
+  platform: PosterLink["platform"];
+  label: string;
+  order: number;
+}): Promise<void> {
+  return setDoc(doc(posterLinksCol, crypto.randomUUID()), data);
+}
+
+export function updatePosterLink(
+  id: string,
+  data: Partial<{ platform: PosterLink["platform"]; label: string }>
+): Promise<void> {
+  return updateDoc(doc(posterLinksCol, id), data);
+}
+
+export function removePosterLink(id: string): Promise<void> {
+  return deleteDoc(doc(posterLinksCol, id));
+}
 
 // ---------- قراءة حية (real-time) ----------
 

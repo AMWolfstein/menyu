@@ -23,8 +23,7 @@ export function getDiscountPercent(item: DiscountFields): number {
 
 /**
  * بيانات الخصم الخاصة بوزن معيّن، أو بالصنف نفسه لو مفيش أوزان (وزن غير
- * محدد). تاريخ الانتهاء دايمًا من الصنف نفسه — حقل واحد مشترك بينطبق على
- * أي خصم عليه، سواء كان على السعر الأساسي أو على وزن بعينه.
+ * محدد). كل وزن مستقل بالكامل — له سعره وخصمه وتاريخ انتهاء خصمه الخاصين.
  */
 export function getVariantDiscountFields(
   item: ItemWithVariants,
@@ -34,7 +33,7 @@ export function getVariantDiscountFields(
     return {
       price: variant.price,
       discountPrice: variant.discountPrice,
-      discountEndsAt: item.discountEndsAt,
+      discountEndsAt: variant.discountEndsAt,
     };
   }
   return item;

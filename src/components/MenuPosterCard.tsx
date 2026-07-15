@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { LiveMenuCategory } from "@/hooks/useMenuData";
-import type { Restaurant } from "@/types/menu";
+import type { PosterLink, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import {
   isDiscountActive,
@@ -10,6 +10,7 @@ import {
   getVariantDiscountFields,
   pickCheapestVariant,
 } from "@/lib/discount";
+import PosterFooterLinks from "@/components/PosterFooterLinks";
 
 // ملاحظة: العناصر جوّا المنطقة اللي بتتحوّل لصورة (posterRef) بتستخدم inline
 // styles بس، مش كلاسات Tailwind — Tailwind v4 بيولّد ألوان بصيغة lab()/oklch()
@@ -29,9 +30,11 @@ const COLORS = {
 export default function MenuPosterCard({
   category,
   restaurant,
+  posterLinks,
 }: {
   category: LiveMenuCategory;
   restaurant: Restaurant;
+  posterLinks: PosterLink[];
 }) {
   const posterRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -75,9 +78,18 @@ export default function MenuPosterCard({
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: COLORS.navy }}>
-            {restaurant.name}
-          </h1>
+          {restaurant.imageUrl ? (
+            <img
+              src={restaurant.imageUrl}
+              alt={restaurant.name}
+              crossOrigin="anonymous"
+              style={{ height: 56, width: "auto", margin: "0 auto", display: "block" }}
+            />
+          ) : (
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: COLORS.navy }}>
+              {restaurant.name}
+            </h1>
+          )}
           <div
             style={{
               margin: "8px auto 0",
@@ -162,14 +174,7 @@ export default function MenuPosterCard({
           })}
         </ul>
 
-        {restaurant.phone && (
-          <p
-            dir="ltr"
-            style={{ marginTop: 24, marginBottom: 0, textAlign: "center", fontSize: 12, color: COLORS.muted }}
-          >
-            {restaurant.phone}
-          </p>
-        )}
+        <PosterFooterLinks links={posterLinks} colors={COLORS} />
       </div>
 
       <button
