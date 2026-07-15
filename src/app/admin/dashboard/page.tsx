@@ -108,6 +108,7 @@ export default function AdminDashboardPage() {
               categories={categories}
               currency={restaurant?.currency ?? ""}
               suppliers={suppliers}
+              restaurantLogoUrl={restaurant?.imageUrl}
             />
           </div>
         )}

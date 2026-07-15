@@ -1,4 +1,21 @@
-export default function ProductImagePlaceholder({ className }: { className?: string }) {
+import Image from "next/image";
+
+export default function ProductImagePlaceholder({
+  className,
+  logoUrl,
+}: {
+  className?: string;
+  /** شعار المحل — لو موجود بيتعرض بدل أيقونة الثلج الافتراضية. */
+  logoUrl?: string;
+}) {
+  if (logoUrl) {
+    return (
+      <div className={`relative bg-surface-2 ${className ?? ""}`}>
+        <Image src={logoUrl} alt="" fill sizes="200px" className="object-contain" />
+      </div>
+    );
+  }
+
   return (
     <div className={`flex items-center justify-center bg-surface-2 ${className ?? ""}`}>
       <svg

@@ -118,10 +118,12 @@ export default function ItemForm({
   categories,
   currency,
   suppliers,
+  restaurantLogoUrl,
 }: {
   categories: LiveMenuCategory[];
   currency: string;
   suppliers: SimpleListItem[];
+  restaurantLogoUrl?: string;
 }) {
   const [addDraft, setAddDraft] = useState<ItemDraft | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -238,6 +240,7 @@ export default function ItemForm({
                           value={editDraft.imageUrl || undefined}
                           onChange={(url) => setEditDraft({ ...editDraft, imageUrl: url })}
                           folder="items"
+                          logoUrl={restaurantLogoUrl}
                         />
                         <div className="flex flex-wrap items-center gap-2">
                           <input
@@ -354,7 +357,10 @@ export default function ItemForm({
                                 className="object-cover"
                               />
                             ) : (
-                              <ProductImagePlaceholder className="h-full w-full" />
+                              <ProductImagePlaceholder
+                                className="h-full w-full"
+                                logoUrl={restaurantLogoUrl}
+                              />
                             )}
                           </div>
                           <div className="min-w-0">
@@ -429,6 +435,7 @@ export default function ItemForm({
                   value={addDraft.imageUrl || undefined}
                   onChange={(url) => setAddDraft({ ...addDraft, imageUrl: url })}
                   folder="items"
+                  logoUrl={restaurantLogoUrl}
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   <input

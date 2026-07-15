@@ -167,6 +167,7 @@ export default function MenuLive() {
                 item={item}
                 currency={restaurant.currency}
                 onSupplierClick={handleSelectSupplier}
+                logoUrl={restaurant.imageUrl}
               />
             ))}
           </div>

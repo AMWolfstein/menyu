@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cairo } from "next/font/google";
 import "./globals.css";
 import { getRestaurantOnce } from "@/lib/firestore";
+import { cloudinaryIconUrl } from "@/lib/cloudinaryIcon";
 import { CartProvider } from "@/context/CartContext";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
@@ -26,7 +27,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title: restaurant?.name ?? "المنيو الرقمي",
     },
     icons: {
-      apple: "/icons/apple-touch-icon.png",
+      apple: restaurant?.imageUrl
+        ? cloudinaryIconUrl(restaurant.imageUrl, 180)
+        : "/icons/apple-touch-icon.png",
     },
   };
 }
