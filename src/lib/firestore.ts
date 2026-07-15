@@ -4,7 +4,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -17,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { MenuCategory, MenuItem, Restaurant, SimpleListItem } from "@/types/menu";
+import type { Order } from "@/types/order";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
   order: number;
@@ -88,6 +92,30 @@ export async function getRestaurantOnce(): Promise<Restaurant | null> {
   }
 }
 
+/** قراءة مرة واحدة للفئات والأصناف — تُستخدم في السيرفر لبيانات SEO المنسّقة (JSON-LD) فقط. */
+export async function getMenuOnce(): Promise<
+  { id: string; name: string; icon: string; items: FirestoreItem[] }[]
+> {
+  try {
+    const [categoriesSnap, itemsSnap] = await Promise.all([getDocs(categoriesCol), getDocs(itemsCol)]);
+    const categories = categoriesSnap.docs.map((d) => ({
+      id: d.id,
+      ...(d.data() as Omit<FirestoreCategory, "id">),
+    }));
+    const items = itemsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<FirestoreItem, "id">) }));
+    return categories
+      .sort((a, b) => a.order - b.order)
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        icon: category.icon,
+        items: items.filter((item) => item.categoryId === category.id && item.available !== false),
+      }));
+  } catch {
+    return [];
+  }
+}
+
 export function subscribeCategories(
   cb: (categories: FirestoreCategory[]) => void
 ): Unsubscribe {
@@ -143,6 +171,7 @@ export function addItem(data: {
   price: number;
   discountPrice?: number;
   discountEndsAt?: Timestamp;
+  variants?: MenuItem["variants"];
   badge?: MenuItem["badge"];
   available?: boolean;
   imageUrl?: string;
@@ -162,6 +191,37 @@ export function updateItem(
 
 export function deleteItem(id: string): Promise<void> {
   return deleteDoc(doc(itemsCol, id));
+}
+
+// ---------- سجل الطلبات ----------
+// الكتابة مفتوحة لأي زبون (بيبعت الطلب من غير تسجيل دخول)، والقراءة مقصورة
+// على الأدمن فقط (بيانات عملاء خاصة) — عكس باقي المجموعات. شوف firestore.rules.
+
+const ordersCol = collection(db, "orders");
+
+/** Firestore بيرفض قيم undefined صريحة — بنشيلها قبل الكتابة بدل ما نتأكد يدويًا في كل مكان. */
+function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
+}
+
+export async function saveOrder(order: Omit<Order, "id" | "createdAt">): Promise<void> {
+  const batch = writeBatch(db);
+  batch.set(doc(ordersCol), {
+    ...stripUndefined(order),
+    items: order.items.map((line) => stripUndefined(line)),
+    createdAt: serverTimestamp(),
+  });
+  order.items.forEach((line) => {
+    batch.update(doc(itemsCol, line.itemId), { orderCount: increment(line.qty) });
+  });
+  await batch.commit();
+}
+
+export function subscribeOrders(cb: (orders: Order[]) => void): Unsubscribe {
+  const q = query(ordersCol, orderBy("createdAt", "desc"), limit(200));
+  return onSnapshot(q, (snap) => {
+    cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Order, "id">) })));
+  });
 }
 
 // ---------- تعبئة أولية (seed) ----------

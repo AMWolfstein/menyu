@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import {
@@ -58,12 +59,17 @@ export default function AdminDashboardPage() {
       <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-extrabold text-cream">لوحة التحكم</h1>
-          <button
-            onClick={() => signOut(auth)}
-            className="text-sm text-muted hover:text-cream"
-          >
-            تسجيل الخروج
-          </button>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/orders" className="text-sm text-gold hover:text-gold-soft">
+              سجل الطلبات
+            </Link>
+            <button
+              onClick={() => signOut(auth)}
+              className="text-sm text-muted hover:text-cream"
+            >
+              تسجيل الخروج
+            </button>
+          </div>
         </div>
 
         {!loading && categories.length === 0 && (

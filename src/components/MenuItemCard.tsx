@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import type { Timestamp } from "firebase/firestore";
 import type { MenuItem } from "@/types/menu";
@@ -24,11 +27,23 @@ export default function MenuItemCard({
   onSupplierClick?: (supplierId: string, supplierName: string) => void;
 }) {
   const { items, addItem, setQty } = useCart();
-  const qtyInCart = items.find((i) => i.id === item.id)?.qty ?? 0;
+
+  const variants = item.variants ?? [];
+  const hasVariants = variants.length > 0;
+  const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? "");
+  const selectedVariant = hasVariants
+    ? (variants.find((v) => v.id === selectedVariantId) ?? variants[0])
+    : null;
+
+  const cartLineId = selectedVariant ? `${item.id}-${selectedVariant.id}` : item.id;
+  const qtyInCart = items.find((i) => i.id === cartLineId)?.qty ?? 0;
 
   const hasDiscount = isDiscountActive(item);
   const discountPercent = getDiscountPercent(item);
-  const payablePrice = hasDiscount ? item.discountPrice! : item.price;
+  const basePrice = selectedVariant ? selectedVariant.price : item.price;
+  const payablePrice = hasDiscount
+    ? Math.round(basePrice * (1 - discountPercent / 100))
+    : basePrice;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface/60 transition-colors hover:border-gold/40 hover:bg-surface-2">
@@ -78,17 +93,36 @@ export default function MenuItemCard({
           {item.description}
         </p>
 
-        <div className="mt-4 flex items-center gap-2">
-          <div className="flex-1 rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
+        <div className="mt-4 flex flex-col gap-2">
+          {hasVariants && (
+            <div className="flex flex-wrap gap-1.5">
+              {variants.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setSelectedVariantId(v.id)}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                    v.id === selectedVariant?.id
+                      ? "border-gold bg-gold text-base"
+                      : "border-line text-muted hover:border-gold/40 hover:text-cream"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="rounded-lg bg-base/60 px-3 py-2 text-center font-display text-sm font-bold text-gold">
             {hasDiscount ? (
               <span className="flex items-center justify-center gap-1.5">
                 <span className="text-xs font-normal text-muted line-through">
-                  {formatPrice(item.price, currency)}
+                  {formatPrice(basePrice, currency)}
                 </span>
                 <span>{formatPrice(payablePrice, currency)}</span>
               </span>
             ) : (
-              formatPrice(item.price, currency)
+              formatPrice(basePrice, currency)
             )}
           </div>
 
@@ -96,30 +130,32 @@ export default function MenuItemCard({
             <button
               onClick={() =>
                 addItem({
-                  id: item.id,
+                  id: cartLineId,
+                  itemId: item.id,
                   name: item.name,
+                  variantLabel: selectedVariant?.label,
                   price: payablePrice,
                   imageUrl: item.imageUrl,
-                  ...(hasDiscount && { originalPrice: item.price }),
+                  ...(hasDiscount && { originalPrice: basePrice }),
                 })
               }
-              className="shrink-0 rounded-lg bg-gold px-3 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft"
+              className="w-full rounded-lg bg-gold px-3 py-2 text-sm font-bold text-base transition-colors hover:bg-gold-soft"
             >
               + أضف
             </button>
           ) : (
-            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-gold/40">
+            <div className="flex w-full items-center justify-center gap-1 rounded-lg border border-gold/40">
               <button
-                onClick={() => setQty(item.id, qtyInCart - 1)}
-                className="px-2.5 py-2 text-gold hover:text-gold-soft"
+                onClick={() => setQty(cartLineId, qtyInCart - 1)}
+                className="flex-1 py-2 text-gold hover:text-gold-soft"
                 aria-label="إنقاص الكمية"
               >
                 −
               </button>
-              <span className="min-w-4 text-center text-sm text-cream">{qtyInCart}</span>
+              <span className="min-w-6 text-center text-sm text-cream">{qtyInCart}</span>
               <button
-                onClick={() => setQty(item.id, qtyInCart + 1)}
-                className="px-2.5 py-2 text-gold hover:text-gold-soft"
+                onClick={() => setQty(cartLineId, qtyInCart + 1)}
+                className="flex-1 py-2 text-gold hover:text-gold-soft"
                 aria-label="زيادة الكمية"
               >
                 +

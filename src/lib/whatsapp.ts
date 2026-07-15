@@ -39,7 +39,7 @@ export function buildWhatsAppOrderUrl(
   const paymentMethodName = paymentMethods.find((p) => p.id === checkout.paymentMethodId)?.name;
 
   const itemLines = items.flatMap((item) => [
-    `🔹 ${item.qty} × ${item.name}`,
+    `🔹 ${item.qty} × ${item.name}${item.variantLabel ? ` (${item.variantLabel})` : ""}`,
     `   السعر: ${formatPrice(item.price, restaurant.currency)}`,
     `   الإجمالي: ${formatPrice(item.price * item.qty, restaurant.currency)}`,
   ]);

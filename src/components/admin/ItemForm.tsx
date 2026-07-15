@@ -5,7 +5,7 @@ import Image from "next/image";
 import { deleteField, Timestamp } from "firebase/firestore";
 import { addItem, deleteItem, updateItem } from "@/lib/firestore";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
-import type { MenuItem, SimpleListItem } from "@/types/menu";
+import type { MenuItem, MenuItemVariant, SimpleListItem } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import { isDiscountActive } from "@/lib/discount";
 import ImageUploadField from "@/components/admin/ImageUploadField";
@@ -15,6 +15,8 @@ const inputClass =
   "rounded-lg border border-line bg-base/60 px-3 py-2 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none";
 
 const badges: NonNullable<MenuItem["badge"]>[] = ["عادي", "نباتي", "حار"];
+
+type VariantDraft = { id: string; label: string; price: string };
 
 type ItemDraft = {
   name: string;
@@ -26,6 +28,7 @@ type ItemDraft = {
   categoryId: string;
   imageUrl: string;
   supplierId: string;
+  variants: VariantDraft[];
 };
 
 const emptyDraft = (categoryId: string): ItemDraft => ({
@@ -38,6 +41,7 @@ const emptyDraft = (categoryId: string): ItemDraft => ({
   categoryId,
   imageUrl: "",
   supplierId: "",
+  variants: [],
 });
 
 /** السعر بعد الخصم اختياري، لكن لازم يكون رقم صحيح أقل من السعر الأصلي. */
@@ -46,6 +50,68 @@ function isValidDiscount(price: string, discountPrice: string): boolean {
   const p = Number(price);
   const d = Number(discountPrice);
   return Number.isFinite(d) && d > 0 && d < p;
+}
+
+/** بيسيب بس الصفوف المكتملة (اسم + سعر رقمي صحيح)، وبيحوّلها لشكل MenuItemVariant. */
+function cleanVariants(drafts: VariantDraft[]): MenuItemVariant[] {
+  return drafts
+    .filter((v) => v.label.trim() && Number.isFinite(Number(v.price)) && Number(v.price) > 0)
+    .map((v) => ({
+      id: v.id,
+      label: v.label.trim(),
+      price: Number(v.price),
+    }));
+}
+
+function VariantsEditor({
+  variants,
+  onChange,
+}: {
+  variants: VariantDraft[];
+  onChange: (variants: VariantDraft[]) => void;
+}) {
+  const addRow = () =>
+    onChange([...variants, { id: crypto.randomUUID(), label: "", price: "" }]);
+  const updateRow = (id: string, field: "label" | "price", value: string) =>
+    onChange(variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)));
+  const removeRow = (id: string) => onChange(variants.filter((v) => v.id !== id));
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-line bg-base/30 p-2">
+      <p className="text-xs font-medium text-muted">الأوزان/الأحجام (اختياري)</p>
+      {variants.map((v) => (
+        <div key={v.id} className="flex items-center gap-2">
+          <input
+            className={inputClass}
+            placeholder="مثال: 1 كيلو"
+            value={v.label}
+            onChange={(e) => updateRow(v.id, "label", e.target.value)}
+          />
+          <input
+            className={inputClass}
+            type="number"
+            placeholder="السعر"
+            value={v.price}
+            onChange={(e) => updateRow(v.id, "price", e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => removeRow(v.id)}
+            className="text-xs text-chili hover:opacity-80"
+          >
+            حذف
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addRow}
+        className="w-fit text-xs text-gold hover:text-gold-soft"
+      >
+        + إضافة وزن
+      </button>
+    </div>
+  );
 }
 
 export default function ItemForm({
@@ -86,6 +152,9 @@ export default function ItemForm({
       ...(addDraft.discountEndsAt && {
         discountEndsAt: Timestamp.fromDate(new Date(`${addDraft.discountEndsAt}T23:59:59`)),
       }),
+      ...(cleanVariants(addDraft.variants).length > 0 && {
+        variants: cleanVariants(addDraft.variants),
+      }),
     });
     setAddDraft(null);
   };
@@ -102,6 +171,11 @@ export default function ItemForm({
       categoryId: item.categoryId,
       imageUrl: item.imageUrl ?? "",
       supplierId: item.supplierId ?? "",
+      variants: (item.variants ?? []).map((v) => ({
+        id: v.id,
+        label: v.label,
+        price: String(v.price),
+      })),
     });
   };
 
@@ -111,6 +185,7 @@ export default function ItemForm({
       window.alert("السعر بعد الخصم لازم يكون رقم أقل من السعر الأصلي");
       return;
     }
+    const variants = cleanVariants(editDraft.variants);
     // deleteField() actually removes the field; a literal `undefined` would
     // make Firestore throw, so cleared optional fields use the sentinel.
     await updateItem(id, {
@@ -125,6 +200,7 @@ export default function ItemForm({
       discountEndsAt: editDraft.discountEndsAt
         ? Timestamp.fromDate(new Date(`${editDraft.discountEndsAt}T23:59:59`))
         : deleteField(),
+      variants: variants.length > 0 ? variants : deleteField(),
     });
     setEditingId(null);
   };
@@ -260,6 +336,10 @@ export default function ItemForm({
                             إلغاء
                           </button>
                         </div>
+                        <VariantsEditor
+                          variants={editDraft.variants}
+                          onChange={(variants) => setEditDraft({ ...editDraft, variants })}
+                        />
                       </div>
                     ) : (
                       <div className="flex items-center justify-between gap-3">
@@ -303,6 +383,10 @@ export default function ItemForm({
                               {item.supplierId
                                 ? ` · ${suppliers.find((s) => s.id === item.supplierId)?.name ?? ""}`
                                 : ""}
+                              {item.variants && item.variants.length > 0
+                                ? ` · ${item.variants.length} أوزان`
+                                : ""}
+                              {item.orderCount ? ` · طُلب ${item.orderCount} مرة` : ""}
                             </p>
                           </div>
                         </div>
@@ -425,6 +509,10 @@ export default function ItemForm({
                     إلغاء
                   </button>
                 </div>
+                <VariantsEditor
+                  variants={addDraft.variants}
+                  onChange={(variants) => setAddDraft({ ...addDraft, variants })}
+                />
               </form>
             ) : (
               <button
