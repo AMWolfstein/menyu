@@ -8,7 +8,7 @@ import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { suppliersApi } from "@/lib/firestore";
-import { isDiscountActive, getDiscountPercent } from "@/lib/discount";
+import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
 
 const PAGE_SIZE = 12; // يتقسم بالظبط على 2 (موبايل) و3 (شاشات كبيرة) و4 أعمدة
 
@@ -64,8 +64,8 @@ export default function MenuLive() {
     }
     if (activeCategory === "discounts") {
       return allItems
-        .filter((item) => isDiscountActive(item))
-        .sort((a, b) => getDiscountPercent(b) - getDiscountPercent(a));
+        .filter((item) => itemHasAnyDiscount(item))
+        .sort((a, b) => getItemMaxDiscountPercent(b) - getItemMaxDiscountPercent(a));
     }
     return activeCategory === "all"
       ? allItems

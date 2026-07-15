@@ -23,6 +23,7 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
   const [form, setForm] = useState<Restaurant>({
     ...(restaurant ?? emptyRestaurant),
     imageUrl: restaurant?.imageUrl ?? "",
+    themeColor: restaurant?.themeColor ?? "#2f3c93",
     branchesEnabled: restaurant?.branchesEnabled ?? false,
     facebookUrl: restaurant?.facebookUrl ?? "",
     whatsappUrl: restaurant?.whatsappUrl ?? "",
@@ -94,6 +95,23 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
+        </div>
+        <div>
+          <label className={labelClass}>لون التطبيق (PWA)</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={form.themeColor ?? "#2f3c93"}
+              onChange={(e) => setForm({ ...form, themeColor: e.target.value })}
+              className="h-9 w-12 shrink-0 cursor-pointer rounded-lg border border-line bg-base/60 p-1"
+            />
+            <input
+              className={inputClass}
+              dir="ltr"
+              value={form.themeColor ?? "#2f3c93"}
+              onChange={(e) => setForm({ ...form, themeColor: e.target.value })}
+            />
+          </div>
         </div>
       </div>
 

@@ -4,7 +4,12 @@ import { useRef, useState } from "react";
 import type { LiveMenuCategory } from "@/hooks/useMenuData";
 import type { Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
-import { isDiscountActive, getDiscountPercent } from "@/lib/discount";
+import {
+  isDiscountActive,
+  getDiscountPercent,
+  getVariantDiscountFields,
+  pickCheapestVariant,
+} from "@/lib/discount";
 
 // نفس ملاحظة MenuPosterCard.tsx: كل الألوان جوّا المنطقة اللي بتتحوّل لصورة
 // لازم تبقى inline styles، مش كلاسات Tailwind (مشكلة توافق html2canvas مع
@@ -111,8 +116,9 @@ export default function CombinedMenuPoster({
 
             <ul style={{ marginTop: 12, padding: 0, listStyle: "none" }}>
               {category.items.map((item, index) => {
-                const discounted = isDiscountActive(item);
-                const percent = getDiscountPercent(item);
+                const fields = getVariantDiscountFields(item, pickCheapestVariant(item));
+                const discounted = isDiscountActive(fields);
+                const percent = getDiscountPercent(fields);
                 return (
                   <li
                     key={item.id}
@@ -147,7 +153,7 @@ export default function CombinedMenuPoster({
                         <span
                           style={{ fontSize: 11, color: COLORS.gray, textDecoration: "line-through" }}
                         >
-                          {formatPrice(item.price, restaurant.currency)}
+                          {formatPrice(fields.price, restaurant.currency)}
                         </span>
                       )}
                       <span
@@ -158,7 +164,7 @@ export default function CombinedMenuPoster({
                         }}
                       >
                         {formatPrice(
-                          discounted ? item.discountPrice! : item.price,
+                          discounted ? fields.discountPrice! : fields.price,
                           restaurant.currency
                         )}
                       </span>

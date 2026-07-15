@@ -15,8 +15,7 @@ import { restaurant as seedRestaurant, categories as seedCategories } from "@/da
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import RestaurantForm from "@/components/admin/RestaurantForm";
-import CategoryForm from "@/components/admin/CategoryForm";
-import ItemForm from "@/components/admin/ItemForm";
+import ItemsPanel from "@/components/admin/ItemsPanel";
 import SimpleListManager from "@/components/admin/SimpleListManager";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 
@@ -103,8 +102,7 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             )}
-            <CategoryForm categories={categories} />
-            <ItemForm
+            <ItemsPanel
               categories={categories}
               currency={restaurant?.currency ?? ""}
               suppliers={suppliers}
