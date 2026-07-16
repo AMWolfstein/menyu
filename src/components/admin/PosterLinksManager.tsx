@@ -41,6 +41,7 @@ export default function PosterLinksManager() {
   };
 
   const saveEdit = async (id: string) => {
+    if (!editLabel.trim()) return;
     await updatePosterLink(id, { platform: editPlatform, label: editLabel });
     setEditingId(null);
   };

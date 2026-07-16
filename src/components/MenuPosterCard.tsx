@@ -48,10 +48,22 @@ export default function MenuPosterCard({
     setDownloading(true);
     setError(false);
     try {
+      // لازم ننتظر شعار المطعم (لو موجود) يخلص تحميل قبل ما نلتقط الصورة —
+      // من غيرها html2canvas بيلتقط الـ DOM قبل ما بيانات الصورة توصل،
+      // فبيطلع مكانها فاضي في الصورة النهائية.
+      const logoImg = posterRef.current.querySelector("img");
+      if (logoImg && !logoImg.complete) {
+        await new Promise<void>((resolve) => {
+          logoImg.addEventListener("load", () => resolve(), { once: true });
+          logoImg.addEventListener("error", () => resolve(), { once: true });
+        });
+      }
+
       const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(posterRef.current, {
         backgroundColor: COLORS.white,
         scale: 2,
+        useCORS: true,
       });
       const link = document.createElement("a");
       link.download = `${restaurant.name}-${category.name}.png`;
