@@ -58,10 +58,20 @@ export function getItemMaxDiscountPercent(item: ItemWithVariants): number {
   return getDiscountPercent(item);
 }
 
-/** أرخص وزن في الصنف — يُستخدم كسعر تلخيصي سريع (صور المشاركة، السيو). */
+/** أرخص وزن في الصنف بعد احتساب خصمه الخاص (لو فعّال) — يُستخدم كسعر
+ * تلخيصي سريع (صور المشاركة، السيو)، عشان وزن بخصم كبير يتحسب أرخص من
+ * وزن سعره الأساسي أقل لكن من غير خصم. */
 export function pickCheapestVariant(item: {
   variants?: MenuItemVariant[];
 }): MenuItemVariant | undefined {
   if (!item.variants || item.variants.length === 0) return undefined;
-  return item.variants.reduce((min, v) => (v.price < min.price ? v : min));
+  const effectivePrice = (v: MenuItemVariant) =>
+    isDiscountActive({
+      price: v.price,
+      discountPrice: v.discountPrice,
+      discountEndsAt: v.discountEndsAt,
+    })
+      ? v.discountPrice!
+      : v.price;
+  return item.variants.reduce((min, v) => (effectivePrice(v) < effectivePrice(min) ? v : min));
 }

@@ -233,8 +233,13 @@ export default function ItemFormModal({
     if (!draft.name.trim()) return;
 
     for (const r of draft.priceRows) {
-      if (!Number.isFinite(Number(r.price)) || Number(r.price) <= 0) continue;
-      if (!isValidDiscount(Number(r.price), r.discountPrice)) {
+      if (r.price.trim() === "") continue;
+      const price = Number(r.price);
+      if (!Number.isFinite(price) || price <= 0) {
+        window.alert(`السعر لـ"${r.label || "الصف ده"}" لازم يكون رقم أكبر من صفر`);
+        return;
+      }
+      if (!isValidDiscount(price, r.discountPrice)) {
         window.alert(
           `السعر بعد الخصم لـ"${r.label || "السعر الأساسي"}" لازم يكون رقم أقل من سعره`
         );
@@ -249,41 +254,46 @@ export default function ItemFormModal({
     }
 
     setSaving(true);
-    if (item) {
-      // deleteField() actually removes the field; a literal `undefined` would
-      // make Firestore throw, so cleared optional fields use the sentinel.
-      await updateItem(item.id, {
-        name: draft.name,
-        description: draft.description,
-        price: cleaned.price,
-        categoryId: draft.categoryId,
-        badge: draft.badge ? (draft.badge as MenuItem["badge"]) : deleteField(),
-        imageUrl: draft.imageUrl ? draft.imageUrl : deleteField(),
-        supplierId: draft.supplierId ? draft.supplierId : deleteField(),
-        discountPrice: cleaned.discountPrice != null ? cleaned.discountPrice : deleteField(),
-        discountEndsAt: cleaned.discountEndsAt ?? deleteField(),
-        variants: cleaned.variants.length > 0 ? cleaned.variants : deleteField(),
-      });
-    } else {
-      // Firestore rejects literal `undefined` field values, so optional fields
-      // are only included when actually set — never written as `undefined`.
-      await addItem({
-        categoryId,
-        name: draft.name,
-        description: draft.description,
-        price: cleaned.price,
-        available: true,
-        order: targetCategory?.items.length ?? 0,
-        ...(draft.badge && { badge: draft.badge as MenuItem["badge"] }),
-        ...(draft.imageUrl && { imageUrl: draft.imageUrl }),
-        ...(draft.supplierId && { supplierId: draft.supplierId }),
-        ...(cleaned.discountPrice != null && { discountPrice: cleaned.discountPrice }),
-        ...(cleaned.discountEndsAt && { discountEndsAt: cleaned.discountEndsAt }),
-        ...(cleaned.variants.length > 0 && { variants: cleaned.variants }),
-      });
+    try {
+      if (item) {
+        // deleteField() actually removes the field; a literal `undefined` would
+        // make Firestore throw, so cleared optional fields use the sentinel.
+        await updateItem(item.id, {
+          name: draft.name,
+          description: draft.description,
+          price: cleaned.price,
+          categoryId: draft.categoryId,
+          badge: draft.badge ? (draft.badge as MenuItem["badge"]) : deleteField(),
+          imageUrl: draft.imageUrl ? draft.imageUrl : deleteField(),
+          supplierId: draft.supplierId ? draft.supplierId : deleteField(),
+          discountPrice: cleaned.discountPrice != null ? cleaned.discountPrice : deleteField(),
+          discountEndsAt: cleaned.discountEndsAt ?? deleteField(),
+          variants: cleaned.variants.length > 0 ? cleaned.variants : deleteField(),
+        });
+      } else {
+        // Firestore rejects literal `undefined` field values, so optional fields
+        // are only included when actually set — never written as `undefined`.
+        await addItem({
+          categoryId,
+          name: draft.name,
+          description: draft.description,
+          price: cleaned.price,
+          available: true,
+          order: targetCategory?.items.length ?? 0,
+          ...(draft.badge && { badge: draft.badge as MenuItem["badge"] }),
+          ...(draft.imageUrl && { imageUrl: draft.imageUrl }),
+          ...(draft.supplierId && { supplierId: draft.supplierId }),
+          ...(cleaned.discountPrice != null && { discountPrice: cleaned.discountPrice }),
+          ...(cleaned.discountEndsAt && { discountEndsAt: cleaned.discountEndsAt }),
+          ...(cleaned.variants.length > 0 && { variants: cleaned.variants }),
+        });
+      }
+      onClose();
+    } catch {
+      window.alert("حصل خطأ أثناء الحفظ، حاول تاني");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    onClose();
   };
 
   return (
