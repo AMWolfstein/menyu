@@ -13,12 +13,14 @@ import SimpleListManager from "@/components/admin/SimpleListManager";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 import PosterLinksManager from "@/components/admin/PosterLinksManager";
 import HeroImagesManager from "@/components/admin/HeroImagesManager";
+import BackupPanel from "@/components/admin/BackupPanel";
 
 const TABS = [
   { id: "items", label: "الأصناف والفئات" },
   { id: "orders", label: "سجل الطلبات" },
   { id: "poster", label: "روابط صور المشاركة" },
   { id: "settings", label: "الإعدادات" },
+  { id: "backup", label: "النسخ الاحتياطي" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -117,6 +119,8 @@ export default function AdminDashboardPage() {
             />
           </div>
         )}
+
+        {activeTab === "backup" && <BackupPanel />}
       </div>
     </main>
   );

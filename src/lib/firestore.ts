@@ -28,6 +28,7 @@ import type {
   SimpleListItem,
 } from "@/types/menu";
 import type { Order } from "@/types/order";
+import type { BackupConfig } from "@/types/backup";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
   order: number;
@@ -126,6 +127,25 @@ export function addHeroImage(imageUrl: string, order: number): Promise<void> {
 
 export function removeHeroImage(id: string): Promise<void> {
   return deleteDoc(doc(heroImagesCol, id));
+}
+
+// ---------- إعدادات النسخ الاحتياطي التلقائي ----------
+
+const backupConfigRef = doc(settingsCol, "backupConfig");
+
+export function subscribeBackupConfig(cb: (config: BackupConfig | null) => void): Unsubscribe {
+  return onSnapshot(backupConfigRef, (snap) => {
+    cb(snap.exists() ? (snap.data() as BackupConfig) : null);
+  });
+}
+
+export async function getBackupConfigOnce(): Promise<BackupConfig | null> {
+  const snap = await getDoc(backupConfigRef);
+  return snap.exists() ? (snap.data() as BackupConfig) : null;
+}
+
+export function saveBackupConfig(config: BackupConfig): Promise<void> {
+  return setDoc(backupConfigRef, config, { merge: true });
 }
 
 // ---------- قراءة حية (real-time) ----------
