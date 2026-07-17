@@ -39,13 +39,11 @@ export default function MenuLive() {
   const allItems = useMemo(() => {
     return categories
       .flatMap((category) =>
-        category.items
-          .filter((item) => item.available !== false)
-          .map((item) => ({
-            ...item,
-            categoryId: category.id,
-            supplierName: suppliers.find((s) => s.id === item.supplierId)?.name,
-          }))
+        category.items.map((item) => ({
+          ...item,
+          categoryId: category.id,
+          supplierName: suppliers.find((s) => s.id === item.supplierId)?.name,
+        }))
       )
       .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
   }, [categories, suppliers]);
