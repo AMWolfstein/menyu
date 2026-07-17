@@ -22,11 +22,13 @@ export default function MenuItemCard({
   currency,
   onSupplierClick,
   logoUrl,
+  isBestSeller,
 }: {
   item: MenuItem & { supplierName?: string; discountEndsAt?: Timestamp };
   currency: string;
   onSupplierClick?: (supplierId: string, supplierName: string) => void;
   logoUrl?: string;
+  isBestSeller?: boolean;
 }) {
   const { items, addItem, setQty } = useCart();
 
@@ -75,12 +77,20 @@ export default function MenuItemCard({
             خصم <span dir="ltr">{discountPercent}%</span>
           </span>
         )}
-        {item.badge && (
+        {isBestSeller ? (
           <span
-            className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
+            className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles["الأكثر طلباً"]}`}
           >
-            {item.badge}
+            الأكثر طلباً
           </span>
+        ) : (
+          item.badge && (
+            <span
+              className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
+            >
+              {item.badge}
+            </span>
+          )
         )}
       </div>
 
