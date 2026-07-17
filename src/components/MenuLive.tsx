@@ -9,6 +9,7 @@ import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { suppliersApi } from "@/lib/firestore";
 import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
+import { getBestSellers, BEST_SELLER_BADGE_COUNT } from "@/lib/bestSellers";
 
 const PAGE_SIZE = 12; // يتقسم بالظبط على 2 (موبايل) و3 (شاشات كبيرة) و4 أعمدة
 
@@ -69,6 +70,10 @@ export default function MenuLive() {
       ? allItems
       : allItems.filter((item) => item.categoryId === activeCategory);
   }, [allItems, activeCategory, activeSupplier, searchQuery]);
+
+  const bestSellerIds = useMemo(() => {
+    return new Set(getBestSellers(categories, BEST_SELLER_BADGE_COUNT).map((item) => item.id));
+  }, [categories]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -166,6 +171,7 @@ export default function MenuLive() {
                 currency={restaurant.currency}
                 onSupplierClick={handleSelectSupplier}
                 logoUrl={restaurant.imageUrl}
+                isBestSeller={bestSellerIds.has(item.id)}
               />
             ))}
           </div>

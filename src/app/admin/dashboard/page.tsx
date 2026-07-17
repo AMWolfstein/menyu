@@ -88,7 +88,12 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {activeTab === "orders" && <OrdersPanel currency={restaurant?.currency ?? ""} />}
+        {activeTab === "orders" && (
+          <OrdersPanel
+            currency={restaurant?.currency ?? ""}
+            items={categories.flatMap((c) => c.items)}
+          />
+        )}
 
         {activeTab === "poster" && <PosterLinksManager />}
 

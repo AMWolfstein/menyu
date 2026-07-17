@@ -3,9 +3,18 @@
 import { useEffect, useState } from "react";
 import { subscribeOrders } from "@/lib/firestore";
 import type { Order } from "@/types/order";
+import type { LiveMenuItem } from "@/hooks/useMenuData";
 import { formatPrice } from "@/lib/format";
 
-export default function OrdersPanel({ currency }: { currency: string }) {
+const BEST_SELLERS_REPORT_COUNT = 5;
+
+export default function OrdersPanel({
+  currency,
+  items,
+}: {
+  currency: string;
+  items: LiveMenuItem[];
+}) {
   const [orders, setOrders] = useState<Order[] | null>(null);
 
   useEffect(() => subscribeOrders(setOrders), []);
@@ -17,6 +26,11 @@ export default function OrdersPanel({ currency }: { currency: string }) {
     if (!d) return false;
     return d.toDateString() === new Date().toDateString();
   }).length;
+
+  const bestSellers = [...items]
+    .filter((item) => (item.orderCount ?? 0) > 0)
+    .sort((a, b) => (b.orderCount ?? 0) - (a.orderCount ?? 0))
+    .slice(0, BEST_SELLERS_REPORT_COUNT);
 
   return (
     <div className="space-y-6">
@@ -36,6 +50,29 @@ export default function OrdersPanel({ currency }: { currency: string }) {
           <p className="mt-1 text-xs text-muted">طلبات اليوم</p>
         </div>
       </div>
+
+      {bestSellers.length > 0 && (
+        <div className="rounded-xl border border-line bg-surface/60 p-4">
+          <h3 className="font-display text-sm font-bold text-cream">الأصناف الأكثر مبيعًا</h3>
+          <p className="mt-1 text-xs text-muted">
+            محسوبة من عدد مرات الطلب الفعلي — أعلى {BEST_SELLERS_REPORT_COUNT} بيظهروا كمان
+            بشارة &quot;الأكثر طلباً&quot; تلقائيًا على الصفحة الرئيسية.
+          </p>
+          <ol className="mt-3 space-y-2">
+            {bestSellers.map((item, i) => (
+              <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gold/15 text-xs font-bold text-gold">
+                    {i + 1}
+                  </span>
+                  <span className="truncate text-cream">{item.name}</span>
+                </span>
+                <span className="shrink-0 text-xs text-muted">طُلب {item.orderCount} مرة</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {orders === null ? (
         <p className="text-center text-sm text-muted">جارٍ التحميل...</p>
