@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import type { Restaurant } from "@/types/menu";
 
@@ -14,7 +15,7 @@ export default function TopBar({
   searchQuery: string;
   onSearchChange: (query: string) => void;
 }) {
-  const { itemCount, isOpen, setIsOpen } = useCart();
+  const { itemCount } = useCart();
   const [showSearch, setShowSearch] = useState(false);
 
   const closeSearch = () => {
@@ -78,9 +79,8 @@ export default function TopBar({
                   <path d="m21 21-4.3-4.3" />
                 </svg>
               </button>
-              <button
-                type="button"
-                onClick={() => setIsOpen(!isOpen)}
+              <Link
+                href="/cart"
                 aria-label="السلة"
                 className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
               >
@@ -103,7 +103,7 @@ export default function TopBar({
                     {itemCount}
                   </span>
                 )}
-              </button>
+              </Link>
             </div>
           </>
         )}

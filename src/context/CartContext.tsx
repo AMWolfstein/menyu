@@ -24,9 +24,6 @@ type CartContextValue = {
   removeItem: (id: string) => void;
   setQty: (id: string, qty: number) => void;
   clearCart: () => void;
-  /** حالة فتح/قفل لوحة السلة — مشتركة بين زرار السلة في الشريط العلوي ولوحة السلة نفسها. */
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -35,7 +32,6 @@ const STORAGE_KEY = "menyu-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -100,8 +96,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeItem,
         setQty,
         clearCart,
-        isOpen,
-        setIsOpen,
       }}
     >
       {children}
