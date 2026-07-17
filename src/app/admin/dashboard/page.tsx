@@ -12,6 +12,7 @@ import ItemsPanel from "@/components/admin/ItemsPanel";
 import SimpleListManager from "@/components/admin/SimpleListManager";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 import PosterLinksManager from "@/components/admin/PosterLinksManager";
+import HeroImagesManager from "@/components/admin/HeroImagesManager";
 
 const TABS = [
   { id: "items", label: "الأصناف والفئات" },
@@ -102,6 +103,7 @@ export default function AdminDashboardPage() {
             {!loading && (
               <RestaurantForm restaurant={restaurant} key={restaurant ? "ready" : "empty"} />
             )}
+            <HeroImagesManager />
             <SimpleListManager title="الفروع" items={branches} api={branchesApi} />
             <SimpleListManager
               title="مناطق التوصيل"
