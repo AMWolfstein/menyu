@@ -253,29 +253,3 @@ export function subscribeOrders(cb: (orders: Order[]) => void): Unsubscribe {
     cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Order, "id">) })));
   });
 }
-
-// ---------- تعبئة أولية (seed) ----------
-
-export async function seedInitialData(seed: {
-  restaurant: Restaurant;
-  categories: MenuCategory[];
-}): Promise<void> {
-  const batch = writeBatch(db);
-  batch.set(doc(settingsCol, "restaurant"), seed.restaurant);
-  seed.categories.forEach((category, categoryIndex) => {
-    const { id: categoryId, items, ...categoryFields } = category;
-    batch.set(doc(categoriesCol, categoryId), {
-      ...categoryFields,
-      order: categoryIndex,
-    });
-    items.forEach((item, itemIndex) => {
-      const { id: itemId, ...itemFields } = item;
-      batch.set(doc(itemsCol, itemId), {
-        ...itemFields,
-        categoryId,
-        order: itemIndex,
-      });
-    });
-  });
-  await batch.commit();
-}
