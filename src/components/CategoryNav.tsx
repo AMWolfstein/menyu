@@ -22,7 +22,7 @@ export default function CategoryNav({
   }, [active]);
 
   return (
-    <nav className="sticky top-0 z-20 border-b border-line bg-base/85 backdrop-blur">
+    <nav className="sticky top-14 z-20 border-b border-line bg-base/85 backdrop-blur">
       <div
         ref={navRef}
         className="mx-auto flex max-w-3xl gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

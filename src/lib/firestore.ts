@@ -19,7 +19,14 @@ import {
   type UpdateData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { MenuCategory, MenuItem, PosterLink, Restaurant, SimpleListItem } from "@/types/menu";
+import type {
+  HeroImage,
+  MenuCategory,
+  MenuItem,
+  PosterLink,
+  Restaurant,
+  SimpleListItem,
+} from "@/types/menu";
 import type { Order } from "@/types/order";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
@@ -100,6 +107,25 @@ export function updatePosterLink(
 
 export function removePosterLink(id: string): Promise<void> {
   return deleteDoc(doc(posterLinksCol, id));
+}
+
+// ---------- صور البانر المتحرك (hero carousel) ----------
+
+const heroImagesCol = collection(db, "heroImages");
+
+export function subscribeHeroImages(cb: (images: HeroImage[]) => void): Unsubscribe {
+  return onSnapshot(heroImagesCol, (snap) => {
+    const images = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<HeroImage, "id">) }));
+    cb(images.sort((a, b) => a.order - b.order));
+  });
+}
+
+export function addHeroImage(imageUrl: string, order: number): Promise<void> {
+  return setDoc(doc(heroImagesCol, crypto.randomUUID()), { imageUrl, order });
+}
+
+export function removeHeroImage(id: string): Promise<void> {
+  return deleteDoc(doc(heroImagesCol, id));
 }
 
 // ---------- قراءة حية (real-time) ----------

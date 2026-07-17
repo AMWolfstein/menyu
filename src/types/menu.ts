@@ -55,6 +55,13 @@ export type SimpleListItem = {
   order: number;
 };
 
+/** صورة ضمن البانر المتحرك أعلى الصفحة الرئيسية، أسفل الشريط العلوي مباشرة. */
+export type HeroImage = {
+  id: string;
+  imageUrl: string;
+  order: number;
+};
+
 /** رابط بأيقونة يظهر في تذييل صور المنيو المشاركة (بدل رقم الهاتف الثابت). */
 export type PosterLinkPlatform =
   | "whatsapp"

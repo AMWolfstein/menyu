@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from "react";
 import MenuHeader from "@/components/MenuHeader";
+import TopBar from "@/components/TopBar";
+import HeroCarousel from "@/components/HeroCarousel";
 import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
 import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
+import { useHeroImages } from "@/hooks/useHeroImages";
 import { suppliersApi } from "@/lib/firestore";
 import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
 import { getBestSellers, BEST_SELLER_BADGE_COUNT } from "@/lib/bestSellers";
@@ -30,6 +33,7 @@ function MenuSkeleton() {
 export default function MenuLive() {
   const { restaurant, categories, loading } = useMenuData();
   const { items: suppliers } = useSimpleList(suppliersApi);
+  const { images: heroImages } = useHeroImages();
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeSupplier, setActiveSupplier] = useState<{ id: string; name: string } | null>(
     null
@@ -109,8 +113,15 @@ export default function MenuLive() {
     setPage(1);
   };
 
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+  };
+
   return (
     <>
+      <TopBar restaurant={restaurant} searchQuery={searchQuery} onSearchChange={handleSearchChange} />
+      <HeroCarousel images={heroImages} />
       <MenuHeader restaurant={restaurant} />
       <CategoryNav
         items={[
@@ -123,28 +134,6 @@ export default function MenuLive() {
       />
 
       <div className="mx-auto max-w-3xl px-4 pb-24 pt-6">
-        <div className="relative mb-4">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setPage(1);
-            }}
-            placeholder="ابحث عن صنف..."
-            className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute top-1/2 -translate-y-1/2 start-3 text-muted hover:text-cream"
-              aria-label="مسح البحث"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
         {activeSupplier && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
             <span className="text-cream">

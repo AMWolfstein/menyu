@@ -12,8 +12,7 @@ import CheckoutForm from "@/components/CheckoutForm";
 import type { Restaurant } from "@/types/menu";
 
 export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
-  const { items, itemCount, total, removeItem, setQty, clearCart } = useCart();
-  const [expanded, setExpanded] = useState(false);
+  const { items, itemCount, total, removeItem, setQty, clearCart, isOpen, setIsOpen } = useCart();
   const [checkout, setCheckout] = useState<CheckoutInfo>(emptyCheckoutInfo);
 
   const { items: branches } = useSimpleList(branchesApi);
@@ -76,7 +75,7 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 max-h-[85vh] overflow-y-auto border-t border-line bg-surface/95 backdrop-blur">
-      {expanded && (
+      {isOpen && (
         <div className="mx-auto max-w-3xl px-4 pt-4">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-sm font-bold text-cream">طلبك</h2>
@@ -149,7 +148,7 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
 
       <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
         <button
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2 text-sm text-cream"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gold text-xs font-bold text-base">
@@ -158,7 +157,7 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
           <span className="font-display font-bold text-gold">
             {formatPrice(total, restaurant.currency)}
           </span>
-          <span className="text-xs text-muted">{expanded ? "إخفاء" : "عرض الطلب"}</span>
+          <span className="text-xs text-muted">{isOpen ? "إخفاء" : "عرض الطلب"}</span>
         </button>
 
         {canSend ? (
@@ -173,7 +172,7 @@ export default function CartBar({ restaurant }: { restaurant: Restaurant }) {
           </a>
         ) : (
           <button
-            onClick={() => setExpanded(true)}
+            onClick={() => setIsOpen(true)}
             className="rounded-lg bg-[#25D366]/40 px-4 py-2 text-sm font-bold text-white/70"
             title="أكمل الاسم ورقم الهاتف أولاً"
           >
