@@ -64,7 +64,7 @@ export default function MenuItemCard({
         )}
         {hasDiscount && (
           <span className="absolute start-2 top-2 z-10 rounded-full bg-chili px-2 py-1 text-xs font-bold text-white shadow">
-            خصم {discountPercent}%
+            خصم <span dir="ltr">{discountPercent}%</span>
           </span>
         )}
         {item.badge && (

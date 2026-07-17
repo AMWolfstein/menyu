@@ -211,7 +211,7 @@ export default function MenuBoard({
                               padding: "1px 6px",
                             }}
                           >
-                            خصم {percent}%
+                            خصم <span dir="ltr">{percent}%</span>
                           </span>
                         )}
                         {discounted && (
