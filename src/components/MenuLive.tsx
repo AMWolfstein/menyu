@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import MenuHeader from "@/components/MenuHeader";
 import TopBar from "@/components/TopBar";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
+import SocialLinks from "@/components/SocialLinks";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { useHeroImages } from "@/hooks/useHeroImages";
@@ -121,7 +121,6 @@ export default function MenuLive() {
     <>
       <TopBar restaurant={restaurant} searchQuery={searchQuery} onSearchChange={handleSearchChange} />
       <HeroCarousel images={heroImages} />
-      <MenuHeader restaurant={restaurant} />
       <CategoryNav
         items={[
           { id: "all", name: "الكل" },
@@ -187,8 +186,8 @@ export default function MenuLive() {
       </div>
 
       <footer className="border-t border-line bg-surface/40">
-        <div className="mx-auto max-w-3xl px-4 py-8 text-center text-xs text-muted">
-          <p className="font-display text-sm text-cream">{restaurant.name} — جميع الأسعار شاملة الخدمة</p>
+        <div className="mx-auto max-w-3xl px-4 py-8 text-center">
+          <SocialLinks restaurant={restaurant} />
         </div>
       </footer>
     </>
