@@ -6,7 +6,6 @@ import TopBar from "@/components/TopBar";
 import HeroCarousel from "@/components/HeroCarousel";
 import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
-import CartBar from "@/components/CartBar";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { useHeroImages } from "@/hooks/useHeroImages";
@@ -133,7 +132,7 @@ export default function MenuLive() {
         onSelect={handleSelectCategory}
       />
 
-      <div className="mx-auto max-w-3xl px-4 pb-24 pt-6">
+      <div className="mx-auto max-w-3xl px-4 pb-12 pt-6">
         {activeSupplier && (
           <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
             <span className="text-cream">
@@ -192,8 +191,6 @@ export default function MenuLive() {
           <p className="font-display text-sm text-cream">{restaurant.name} — جميع الأسعار شاملة الخدمة</p>
         </div>
       </footer>
-
-      <CartBar restaurant={restaurant} />
     </>
   );
 }
