@@ -12,6 +12,12 @@ const cairo = Cairo({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+// ديناميكي بالكامل — عنوان الصفحة (Tab) والوصف والأيقونات بيتقروا من
+// Firestore مع كل طلب بدل ما يتجمدوا وقت الـ build، عشان أي تعديل لاسم
+// المطعم من لوحة التحكم يوصل لعنوان التاب فورًا من غير الحاجة لعمل نشر
+// جديد على Vercel (نفس فكرة manifest.ts).
+export const dynamic = "force-dynamic";
+
 export async function generateViewport(): Promise<Viewport> {
   const restaurant = await getRestaurantOnce();
   return {
