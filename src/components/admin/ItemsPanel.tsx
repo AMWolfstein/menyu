@@ -37,10 +37,6 @@ export default function ItemsPanel({
     updateItem(item.id, { available: !(item.available !== false) });
   };
 
-  if (categories.length === 0) {
-    return <p className="text-sm text-muted">أضف فئة أولاً عشان تقدر تضيف أصناف.</p>;
-  }
-
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
       <CategorySidebar
@@ -50,6 +46,9 @@ export default function ItemsPanel({
       />
 
       <div className="min-w-0 flex-1">
+        {categories.length === 0 && (
+          <p className="text-sm text-muted">أضف فئة أولاً عشان تقدر تضيف أصناف.</p>
+        )}
         {activeCategory && (
           <>
             <div className="flex items-center justify-between gap-3">
