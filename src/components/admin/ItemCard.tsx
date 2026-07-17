@@ -77,8 +77,8 @@ export default function ItemCard({
         <button
           type="button"
           onClick={onToggleAvailable}
-          aria-label={available ? "إخفاء الصنف" : "إظهار الصنف"}
-          title={available ? "متوفر" : "غير متوفر"}
+          aria-label={available ? "وضع علامة نفذ مؤقتًا" : "وضع علامة متوفر"}
+          title={available ? "متوفر" : "نفذ مؤقتًا"}
           className="rounded-lg p-2 text-muted transition-colors hover:bg-surface-2 hover:text-cream"
         >
           {available ? <EyeIcon className="h-4 w-4" /> : <EyeOffIcon className="h-4 w-4" />}
