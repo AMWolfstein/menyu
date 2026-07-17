@@ -60,6 +60,25 @@ export default function TopBar({
             </div>
 
             <div className="flex items-center gap-1">
+              <Link
+                href="/menu"
+                aria-label="صور المنيو للمشاركة"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2.5" />
+                  <path d="M3 9h18M8 3v6" />
+                  <path d="M7 14h5M7 17h8" />
+                </svg>
+              </Link>
               <button
                 type="button"
                 onClick={() => setShowSearch(true)}
