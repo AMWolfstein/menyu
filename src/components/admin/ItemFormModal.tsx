@@ -5,6 +5,7 @@ import { deleteField, Timestamp } from "firebase/firestore";
 import { addItem, updateItem } from "@/lib/firestore";
 import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
 import { notifyDiscount } from "@/lib/notifyDiscount";
+import { notifyNewItem } from "@/lib/notifyNewItem";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { MenuItem, MenuItemVariant, SimpleListItem } from "@/types/menu";
 import Modal from "@/components/admin/Modal";
@@ -298,11 +299,18 @@ export default function ItemFormModal({
         });
       }
       if (shouldNotify) {
+        // خصم على صنف جديد أهم من كونه صنف جديد بس — إشعار واحد بس أوضح.
         notifyDiscount({
           itemName: draft.name,
           supplierName: suppliers.find((s) => s.id === draft.supplierId)?.name,
           badge: draft.badge || undefined,
           discountPercent: newDiscountPercent,
+        });
+      } else if (!item) {
+        notifyNewItem({
+          itemName: draft.name,
+          supplierName: suppliers.find((s) => s.id === draft.supplierId)?.name,
+          badge: draft.badge || undefined,
         });
       }
       onClose();

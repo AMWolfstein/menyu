@@ -1,22 +1,15 @@
-import { auth } from "@/lib/firebase";
+import { sendPushNotification } from "@/lib/sendPushNotification";
 
-/** بيبعت إشعار Push لكل الزباين المشتركين بخصوص خصم جديد على صنف —
- * فشل الإرسال (شبكة، مفيش مشتركين، إلخ) متعمّد إنه ميوقفش حفظ الصنف نفسه. */
-export async function notifyDiscount(params: {
+export function notifyDiscount(params: {
   itemName: string;
   supplierName?: string;
   badge?: string;
   discountPercent: number;
 }): Promise<void> {
-  try {
-    const idToken = await auth.currentUser?.getIdToken();
-    if (!idToken) return;
-    await fetch("/api/send-discount-notification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idToken, ...params }),
-    });
-  } catch {
-    // تجاهل — إرسال الإشعار عملية ثانوية
-  }
+  const { itemName, supplierName, badge, discountPercent } = params;
+  const details = [supplierName, badge].filter(Boolean).join(" - ");
+  return sendPushNotification({
+    title: "خصومات 🔥",
+    body: `يوجد خصم ${discountPercent}% على ${itemName}${details ? ` (${details})` : ""}`,
+  });
 }
