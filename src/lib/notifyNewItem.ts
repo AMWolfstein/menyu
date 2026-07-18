@@ -10,7 +10,7 @@ export function notifyNewItem(params: {
   imageUrl?: string;
 }): Promise<void> {
   const { itemName, supplierName, badge, price, currency, imageUrl } = params;
-  const details = [supplierName, badge].filter(Boolean).join(" - ");
+  const details = [supplierName?.trim(), badge].filter(Boolean).join(" - ");
   return sendPushNotification({
     title: "صنف جديد 🆕",
     body: `تم إضافة صنف جديد: ${itemName}${

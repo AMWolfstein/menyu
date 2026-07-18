@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getAllPushSubscriptionsOnce } from "@/lib/firestore";
+import { cloudinaryNotificationImageUrl } from "@/lib/cloudinaryIcon";
 
 type NotifyBody = {
   idToken?: string;
@@ -69,7 +70,11 @@ export async function POST(request: Request) {
   }
 
   const subscriptions = await getAllPushSubscriptionsOnce();
-  const payload = JSON.stringify({ title, body: message, image: imageUrl });
+  const payload = JSON.stringify({
+    title,
+    body: message,
+    image: imageUrl ? cloudinaryNotificationImageUrl(imageUrl) : undefined,
+  });
 
   let sent = 0;
   let failed = 0;
