@@ -12,7 +12,7 @@ export function notifyDiscount(params: {
 }): Promise<void> {
   const { itemName, supplierName, badge, discountPercent, discountedPrice, currency, imageUrl } =
     params;
-  const details = [supplierName, badge].filter(Boolean).join(" - ");
+  const details = [supplierName?.trim(), badge].filter(Boolean).join(" - ");
   return sendPushNotification({
     title: "خصومات 🔥",
     body: `يوجد خصم ${discountPercent}% على ${itemName}${
