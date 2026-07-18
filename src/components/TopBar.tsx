@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
+import { useInstallPrompt } from "@/hooks/useInstallPrompt";
 import type { Restaurant } from "@/types/menu";
 
 export default function TopBar({
@@ -16,6 +17,7 @@ export default function TopBar({
   onSearchChange: (query: string) => void;
 }) {
   const { itemCount } = useCart();
+  const { canInstall, promptInstall } = useInstallPrompt();
   const [showSearch, setShowSearch] = useState(false);
 
   const closeSearch = () => {
@@ -67,6 +69,28 @@ export default function TopBar({
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
+              {canInstall && (
+                <button
+                  type="button"
+                  onClick={promptInstall}
+                  aria-label="تثبيت التطبيق"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
+                    <rect x="5" y="2.5" width="14" height="19" rx="2.5" />
+                    <path d="M12 8v6m0 0-2.5-2.5M12 14l2.5-2.5" />
+                    <path d="M9.5 18.5h5" />
+                  </svg>
+                </button>
+              )}
               <Link
                 href="/menu"
                 aria-label="صور المنيو للمشاركة"
