@@ -98,6 +98,7 @@ export default function ItemsPanel({
           categoryId={activeCategory.id}
           categories={categories}
           suppliers={suppliers}
+          currency={currency}
           restaurantLogoUrl={restaurantLogoUrl}
           onClose={() => setShowAddItem(false)}
         />
@@ -109,6 +110,7 @@ export default function ItemsPanel({
           categoryId={editingItem.categoryId}
           categories={categories}
           suppliers={suppliers}
+          currency={currency}
           restaurantLogoUrl={restaurantLogoUrl}
           onClose={() => setEditingItem(null)}
         />
