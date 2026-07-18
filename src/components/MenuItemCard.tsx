@@ -93,18 +93,16 @@ export default function MenuItemCard({
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-base font-bold text-cream">
-          {item.name}
-          {item.supplierName && (
-            <button
-              type="button"
-              onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
-              className="ms-1.5 text-xs font-normal text-muted hover:text-gold hover:underline"
-            >
-              ({item.supplierName})
-            </button>
-          )}
-        </h3>
+        <h3 className="font-display text-base font-bold text-cream">{item.name}</h3>
+        {item.supplierName && (
+          <button
+            type="button"
+            onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
+            className="mt-0.5 block text-start text-sm text-muted hover:text-gold hover:underline"
+          >
+            {item.supplierName}
+          </button>
+        )}
 
         <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
           {item.description}
@@ -132,11 +130,15 @@ export default function MenuItemCard({
 
           <div className="flex items-baseline gap-2">
             {hasDiscount && (
-              <span className="text-xs text-muted line-through">
+              <span className="text-sm tabular-nums text-muted line-through">
                 {formatPrice(basePrice, currency)}
               </span>
             )}
-            <span className="font-display text-lg font-extrabold text-cream">
+            <span
+              className={`font-display text-lg font-extrabold tabular-nums ${
+                hasDiscount ? "text-chili" : "text-cream"
+              }`}
+            >
               {formatPrice(payablePrice, currency)}
             </span>
           </div>
