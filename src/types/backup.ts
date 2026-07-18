@@ -3,13 +3,17 @@
 
 import type { Timestamp } from "firebase/firestore";
 import type { FirestoreCategory, FirestoreItem } from "@/lib/firestore";
-import type { HeroImage, Restaurant, SimpleListItem } from "@/types/menu";
+import type { HeroImage, PosterLink, Restaurant, SimpleListItem } from "@/types/menu";
 
 export type BackupSnapshot = {
   categories: FirestoreCategory[];
   items: FirestoreItem[];
   suppliers: SimpleListItem[];
   heroImages: HeroImage[];
+  branches: SimpleListItem[];
+  deliveryZones: SimpleListItem[];
+  paymentMethods: SimpleListItem[];
+  posterLinks: PosterLink[];
   restaurant: Restaurant | null;
 };
 

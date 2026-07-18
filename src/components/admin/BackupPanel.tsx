@@ -42,7 +42,9 @@ function ConfirmRestoreRow({
   return (
     <div className="mt-2 rounded-lg border border-chili/40 bg-chili/5 p-3">
       <p className="text-xs text-chili">
-        هيتم استبدال كل الفئات والأصناف والموردين وبيانات المطعم الحالية بالكامل بنسخة{" "}
+        هيتم استبدال كل إعدادات لوحة التحكم الحالية (الفئات، الأصناف، الموردين،
+        الفروع، مناطق التوصيل، طرق الدفع، روابط صور المشاركة، صور البانر،
+        وبيانات المطعم) بالكامل بنسخة{" "}
         {backup.createdAt?.toDate().toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" })}
         . الإجراء ده نهائي ومينفعش يتراجع فيه. اكتب &quot;{RESTORE_CONFIRM_PHRASE}&quot; للتأكيد.
       </p>
@@ -268,7 +270,7 @@ export default function BackupPanel() {
                     </p>
                     <p className="text-xs text-muted">
                       {backup.data.categories.length} فئة · {backup.data.items.length} صنف ·{" "}
-                      {backup.data.suppliers.length} مورد
+                      {backup.data.suppliers.length} مورد · {backup.data.branches.length} فرع
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">

@@ -22,7 +22,16 @@ import type { BackupConfig, BackupRecord, BackupSnapshot } from "@/types/backup"
 /** أقصى عدد نسخ نحتفظ بيه — أي نسخة أقدم بتتمسح تلقائيًا بعد كل نسخة جديدة. */
 const MAX_BACKUPS_RETAINED = 10;
 
-const BACKUP_COLLECTIONS = ["categories", "items", "suppliers", "heroImages"] as const;
+const BACKUP_COLLECTIONS = [
+  "categories",
+  "items",
+  "suppliers",
+  "heroImages",
+  "branches",
+  "deliveryZones",
+  "paymentMethods",
+  "posterLinks",
+] as const;
 type BackupCollectionName = (typeof BACKUP_COLLECTIONS)[number];
 
 async function readCollection(name: string): Promise<{ id: string; [key: string]: unknown }[]> {
@@ -32,11 +41,25 @@ async function readCollection(name: string): Promise<{ id: string; [key: string]
 
 /** بيقرا كل بيانات المنيو والإعدادات الحالية ويحفظها كنسخة احتياطية جديدة. */
 export async function runBackup(): Promise<string> {
-  const [categories, items, suppliers, heroImages, restaurantSnap] = await Promise.all([
+  const [
+    categories,
+    items,
+    suppliers,
+    heroImages,
+    branches,
+    deliveryZones,
+    paymentMethods,
+    posterLinks,
+    restaurantSnap,
+  ] = await Promise.all([
     readCollection("categories"),
     readCollection("items"),
     readCollection("suppliers"),
     readCollection("heroImages"),
+    readCollection("branches"),
+    readCollection("deliveryZones"),
+    readCollection("paymentMethods"),
+    readCollection("posterLinks"),
     getDoc(doc(db, "settings", "restaurant")),
   ]);
 
@@ -45,6 +68,10 @@ export async function runBackup(): Promise<string> {
     items: items as BackupSnapshot["items"],
     suppliers: suppliers as BackupSnapshot["suppliers"],
     heroImages: heroImages as BackupSnapshot["heroImages"],
+    branches: branches as BackupSnapshot["branches"],
+    deliveryZones: deliveryZones as BackupSnapshot["deliveryZones"],
+    paymentMethods: paymentMethods as BackupSnapshot["paymentMethods"],
+    posterLinks: posterLinks as BackupSnapshot["posterLinks"],
     restaurant: restaurantSnap.exists() ? (restaurantSnap.data() as BackupSnapshot["restaurant"]) : null,
   };
 
@@ -88,8 +115,12 @@ export async function restoreBackup(backupId: string): Promise<void> {
 
   for (const name of BACKUP_COLLECTIONS) {
     const collectionName: BackupCollectionName = name;
+    const entries = data[collectionName];
+    // نسخ احتياطية أقدم من إضافة مجموعة جديدة (زي posterLinks) ممكن ميكونش
+    // فيها الحقل ده أصلًا — بنتخطاها بدل ما نمسح بيانات حالية مفيش داعي.
+    if (!entries) continue;
     const currentSnap = await getDocs(collection(db, collectionName));
-    const backupIds = new Set(data[collectionName].map((entry) => entry.id));
+    const backupIds = new Set(entries.map((entry) => entry.id));
 
     for (const d of currentSnap.docs) {
       if (!backupIds.has(d.id)) {
@@ -99,7 +130,7 @@ export async function restoreBackup(backupId: string): Promise<void> {
       }
     }
 
-    for (const entry of data[collectionName]) {
+    for (const entry of entries) {
       const { id, ...fields } = entry;
       batch.set(doc(db, collectionName, id), fields);
       opCount++;
