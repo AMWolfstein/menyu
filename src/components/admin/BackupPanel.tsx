@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { subscribeBackupConfig, saveBackupConfig } from "@/lib/firestore";
-import { runBackup, restoreBackup, subscribeBackups } from "@/lib/backup";
+import { runBackup, restoreBackup, deleteBackup, subscribeBackups } from "@/lib/backup";
 import type { BackupConfig, BackupFrequency, BackupRecord } from "@/types/backup";
 
 const inputClass =
@@ -16,6 +16,14 @@ const FREQUENCY_LABELS: Record<BackupFrequency, string> = {
 };
 
 const WEEKDAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+function formatHour(hour: number): string {
+  const period = hour < 12 ? "ص" : "م";
+  const twelve = hour % 12 === 0 ? 12 : hour % 12;
+  return `${twelve}:٠٠ ${period}`;
+}
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 const RESTORE_CONFIRM_PHRASE = "استرجاع";
 
@@ -62,6 +70,7 @@ function ScheduleForm({ config }: { config: BackupConfig | null }) {
   const [frequency, setFrequency] = useState<BackupFrequency>(config?.frequency ?? "daily");
   const [dayOfWeek, setDayOfWeek] = useState(config?.dayOfWeek ?? 0);
   const [dayOfMonth, setDayOfMonth] = useState(config?.dayOfMonth ?? 1);
+  const [preferredHour, setPreferredHour] = useState(config?.preferredHour ?? 3);
   const [savingConfig, setSavingConfig] = useState(false);
 
   const handleSaveSchedule = async (e: React.FormEvent) => {
@@ -69,6 +78,7 @@ function ScheduleForm({ config }: { config: BackupConfig | null }) {
     setSavingConfig(true);
     await saveBackupConfig({
       frequency,
+      preferredHour,
       ...(frequency === "weekly" && { dayOfWeek }),
       ...(frequency === "monthly" && { dayOfMonth }),
     });
@@ -124,6 +134,21 @@ function ScheduleForm({ config }: { config: BackupConfig | null }) {
           </div>
         )}
 
+        <div>
+          <label className={labelClass}>الساعة المفضّلة</label>
+          <select
+            className={inputClass}
+            value={preferredHour}
+            onChange={(e) => setPreferredHour(Number(e.target.value))}
+          >
+            {HOURS.map((h) => (
+              <option key={h} value={h}>
+                {formatHour(h)}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button
           type="submit"
           disabled={savingConfig}
@@ -133,8 +158,15 @@ function ScheduleForm({ config }: { config: BackupConfig | null }) {
         </button>
       </form>
 
+      <p className="mt-3 text-xs text-muted">
+        ملحوظة: &quot;الساعة المفضّلة&quot; دي معلوماتية بس عشان تفضل متسجّلة في
+        إعداداتك — الفحص الفعلي بيحصل يوميًا الساعة 5 صباحًا بتوقيت القاهرة
+        بالظبط (وقت ثابت في إعدادات الاستضافة، ومحتاج تعديل كود وديبلوي جديد
+        عشان يتغير).
+      </p>
+
       {config?.lastRunAt && (
-        <p className="mt-3 text-xs text-muted">
+        <p className="mt-1 text-xs text-muted">
           آخر نسخة تلقائية:{" "}
           {config.lastRunAt.toDate().toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" })}
         </p>
@@ -148,6 +180,7 @@ export default function BackupPanel() {
   const [backups, setBackups] = useState<BackupRecord[] | null>(null);
   const [backingUpNow, setBackingUpNow] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   useEffect(() => subscribeBackupConfig(setConfig), []);
@@ -161,6 +194,18 @@ export default function BackupPanel() {
       window.alert("فشل عمل النسخة الاحتياطية، حاول تاني");
     } finally {
       setBackingUpNow(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("حذف النسخة الاحتياطية دي؟")) return;
+    setDeletingId(id);
+    try {
+      await deleteBackup(id);
+    } catch {
+      window.alert("فشل الحذف، حاول تاني");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -182,7 +227,7 @@ export default function BackupPanel() {
       <div className="rounded-xl border border-line bg-surface/60 p-5">
         <h2 className="font-display text-lg font-bold text-cream">جدولة النسخ التلقائي</h2>
         <p className="mt-1 text-xs text-muted">
-          بيتفحص يوميًا الساعة 3 صباحًا، وبينفذ نسخة جديدة لو النهارده معاده حسب الجدول ده.
+          بيتفحص يوميًا الساعة 5 صباحًا بتوقيت القاهرة، وبينفذ نسخة جديدة لو النهارده معاده حسب الجدول ده.
         </p>
 
         {config !== undefined && (
@@ -226,15 +271,25 @@ export default function BackupPanel() {
                       {backup.data.suppliers.length} مورد
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setConfirmingId(confirmingId === backup.id ? null : backup.id)
-                    }
-                    className="shrink-0 text-xs font-bold text-chili hover:opacity-80"
-                  >
-                    استرجاع
-                  </button>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setConfirmingId(confirmingId === backup.id ? null : backup.id)
+                      }
+                      className="text-xs font-bold text-chili hover:opacity-80"
+                    >
+                      استرجاع
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(backup.id)}
+                      disabled={deletingId === backup.id}
+                      className="text-xs font-bold text-muted hover:text-cream disabled:opacity-40"
+                    >
+                      {deletingId === backup.id ? "جارٍ الحذف..." : "حذف"}
+                    </button>
+                  </div>
                 </div>
 
                 {confirmingId === backup.id && (

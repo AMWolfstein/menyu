@@ -132,6 +132,10 @@ export function alreadyRanToday(config: BackupConfig, now: Date = new Date()): b
   return last.toDateString() === now.toDateString();
 }
 
+export function deleteBackup(backupId: string): Promise<void> {
+  return deleteDoc(doc(db, "backups", backupId));
+}
+
 export function subscribeBackups(cb: (backups: BackupRecord[]) => void): Unsubscribe {
   const q = query(collection(db, "backups"), orderBy("createdAt", "desc"));
   return onSnapshot(q, (snap) => {
