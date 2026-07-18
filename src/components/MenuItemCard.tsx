@@ -10,7 +10,7 @@ import ProductImagePlaceholder from "@/components/ProductImagePlaceholder";
 import { useCart } from "@/context/CartContext";
 
 const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
-  "الأكثر طلباً": "bg-highlight/25 text-amber-800 border-highlight/60",
+  "الأكثر طلباً": "bg-highlight text-base border-highlight",
   جديد: "bg-emerald-600 text-white border-emerald-600",
   عادي: "bg-slate-600 text-white border-slate-600",
   نباتي: "bg-green-600 text-white border-green-600",
@@ -52,7 +52,13 @@ export default function MenuItemCard({
   const outOfStock = item.available === false;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+    <article
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+        isBestSeller
+          ? "border-highlight bg-highlight/5 ring-2 ring-highlight/50"
+          : "border-line bg-surface"
+      }`}
+    >
       <div className="relative aspect-square w-full shrink-0 bg-surface-2">
         {item.imageUrl ? (
           <Image
@@ -77,20 +83,12 @@ export default function MenuItemCard({
             خصم <span dir="ltr">{discountPercent}%</span>
           </span>
         )}
-        {isBestSeller ? (
+        {item.badge && (
           <span
-            className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles["الأكثر طلباً"]}`}
+            className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
           >
-            الأكثر طلباً
+            {item.badge}
           </span>
-        ) : (
-          item.badge && (
-            <span
-              className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
-            >
-              {item.badge}
-            </span>
-          )
         )}
       </div>
 
