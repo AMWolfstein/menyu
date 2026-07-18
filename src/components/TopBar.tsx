@@ -47,19 +47,26 @@ export default function TopBar({
           </div>
         ) : (
           <>
-            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-line bg-surface">
-              {restaurant.imageUrl && (
-                <Image
-                  src={restaurant.imageUrl}
-                  alt={restaurant.name}
-                  fill
-                  sizes="36px"
-                  className="object-cover"
-                />
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-line bg-surface">
+                {restaurant.imageUrl && (
+                  <Image
+                    src={restaurant.imageUrl}
+                    alt={restaurant.name}
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                  />
+                )}
+              </div>
+              {restaurant.tagline && (
+                <span className="truncate text-xs font-medium text-muted">
+                  {restaurant.tagline}
+                </span>
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               <Link
                 href="/menu"
                 aria-label="صور المنيو للمشاركة"
