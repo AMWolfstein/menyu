@@ -34,8 +34,8 @@ export default function TopBar({
   };
 
   return (
-    <div className="sticky top-0 z-30 h-14 border-b border-line bg-surface/95 backdrop-blur">
-      <div className="mx-auto flex h-full max-w-3xl items-center justify-between gap-3 px-4">
+    <div className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
         {showSearch ? (
           <div className="flex flex-1 items-center gap-2">
             <input
@@ -82,7 +82,7 @@ export default function TopBar({
                   type="button"
                   onClick={promptInstall}
                   aria-label="تثبيت التطبيق"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
+                  className="flex w-12 flex-col items-center gap-0.5 rounded-lg py-1 text-muted transition-colors hover:bg-surface-2 hover:text-cream"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -97,6 +97,7 @@ export default function TopBar({
                     <path d="M12 8v6m0 0-2.5-2.5M12 14l2.5-2.5" />
                     <path d="M9.5 18.5h5" />
                   </svg>
+                  <span className="text-[10px] leading-none">تثبيت</span>
                 </button>
               )}
               {notificationsSupported && (
@@ -105,7 +106,7 @@ export default function TopBar({
                   onClick={notificationsSubscribed ? unsubscribeNotifications : subscribeNotifications}
                   disabled={notificationsLoading}
                   aria-label={notificationsSubscribed ? "إلغاء إشعارات الخصومات" : "تفعيل إشعارات الخصومات"}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                  className={`flex w-12 flex-col items-center gap-0.5 rounded-lg py-1 transition-colors disabled:opacity-50 ${
                     notificationsSubscribed
                       ? "text-gold hover:bg-gold/10"
                       : "text-muted hover:bg-surface-2 hover:text-cream"
@@ -123,12 +124,13 @@ export default function TopBar({
                     <path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z" />
                     <path d="M10 19a2 2 0 0 0 4 0" />
                   </svg>
+                  <span className="text-[10px] leading-none">إشعارات</span>
                 </button>
               )}
               <Link
                 href="/menu"
                 aria-label="صور المنيو للمشاركة"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
+                className="flex w-12 flex-col items-center gap-0.5 rounded-lg py-1 text-muted transition-colors hover:bg-surface-2 hover:text-cream"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -143,12 +145,13 @@ export default function TopBar({
                   <path d="M3 9h18M8 3v6" />
                   <path d="M7 14h5M7 17h8" />
                 </svg>
+                <span className="text-[10px] leading-none">المنيو</span>
               </Link>
               <button
                 type="button"
                 onClick={() => setShowSearch(true)}
                 aria-label="بحث"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
+                className="flex w-12 flex-col items-center gap-0.5 rounded-lg py-1 text-muted transition-colors hover:bg-surface-2 hover:text-cream"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -162,31 +165,35 @@ export default function TopBar({
                   <circle cx="11" cy="11" r="7" />
                   <path d="m21 21-4.3-4.3" />
                 </svg>
+                <span className="text-[10px] leading-none">بحث</span>
               </button>
               <Link
                 href="/cart"
                 aria-label="السلة"
-                className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-cream"
+                className="flex w-12 flex-col items-center gap-0.5 rounded-lg py-1 text-muted transition-colors hover:bg-surface-2 hover:text-cream"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-5 w-5"
-                >
-                  <path d="M6 6h15l-1.5 9h-12z" />
-                  <path d="M6 6 5 3H2" />
-                  <circle cx="9.5" cy="19.5" r="1.5" />
-                  <circle cx="17.5" cy="19.5" r="1.5" />
-                </svg>
-                {itemCount > 0 && (
-                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-chili px-1 text-[10px] font-bold text-white">
-                    {itemCount}
-                  </span>
-                )}
+                <span className="relative">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
+                    <path d="M6 6h15l-1.5 9h-12z" />
+                    <path d="M6 6 5 3H2" />
+                    <circle cx="9.5" cy="19.5" r="1.5" />
+                    <circle cx="17.5" cy="19.5" r="1.5" />
+                  </svg>
+                  {itemCount > 0 && (
+                    <span className="absolute -top-1 -end-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-chili px-1 text-[10px] font-bold text-white">
+                      {itemCount}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[10px] leading-none">السلة</span>
               </Link>
             </div>
           </>
