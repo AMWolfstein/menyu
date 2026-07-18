@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { deleteField, Timestamp } from "firebase/firestore";
 import { addItem, updateItem } from "@/lib/firestore";
-import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
+import {
+  itemHasAnyDiscount,
+  getItemMaxDiscountPercent,
+  isDiscountActive,
+  pickCheapestVariant,
+} from "@/lib/discount";
 import { notifyDiscount } from "@/lib/notifyDiscount";
 import { notifyNewItem } from "@/lib/notifyNewItem";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
@@ -173,6 +178,7 @@ export default function ItemFormModal({
   categoryId,
   categories,
   suppliers,
+  currency,
   restaurantLogoUrl,
   onClose,
 }: {
@@ -182,6 +188,7 @@ export default function ItemFormModal({
   categoryId: string;
   categories: LiveMenuCategory[];
   suppliers: SimpleListItem[];
+  currency: string;
   restaurantLogoUrl?: string;
   onClose: () => void;
 }) {
@@ -263,6 +270,20 @@ export default function ItemFormModal({
     const shouldNotify =
       itemHasAnyDiscount(cleaned) && newDiscountPercent !== previousDiscountPercent;
 
+    // السعر اللي بيتعرض في الإشعار — لو فيه أوزان متعددة، بناخد أرخص وزن
+    // فعليًا (نفس منطق التلخيص المستخدم في عرض السعر بالموقع).
+    const notifyVariant = cleaned.variants.length > 0 ? pickCheapestVariant(cleaned) : undefined;
+    const notifyPriceFields = notifyVariant
+      ? {
+          price: notifyVariant.price,
+          discountPrice: notifyVariant.discountPrice,
+          discountEndsAt: notifyVariant.discountEndsAt,
+        }
+      : cleaned;
+    const notifyDiscountedPrice = isDiscountActive(notifyPriceFields)
+      ? notifyPriceFields.discountPrice!
+      : notifyPriceFields.price;
+
     setSaving(true);
     try {
       if (item) {
@@ -305,12 +326,18 @@ export default function ItemFormModal({
           supplierName: suppliers.find((s) => s.id === draft.supplierId)?.name,
           badge: draft.badge || undefined,
           discountPercent: newDiscountPercent,
+          discountedPrice: notifyDiscountedPrice,
+          currency,
+          imageUrl: draft.imageUrl || undefined,
         });
       } else if (!item) {
         notifyNewItem({
           itemName: draft.name,
           supplierName: suppliers.find((s) => s.id === draft.supplierId)?.name,
           badge: draft.badge || undefined,
+          price: notifyPriceFields.price,
+          currency,
+          imageUrl: draft.imageUrl || undefined,
         });
       }
       onClose();

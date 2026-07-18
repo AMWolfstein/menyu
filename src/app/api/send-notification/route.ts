@@ -8,6 +8,7 @@ type NotifyBody = {
   idToken?: string;
   title?: string;
   body?: string;
+  imageUrl?: string;
 };
 
 /** بيتأكد إن الـ idToken فعلاً صادر من مستخدم حقيقي في مشروع Firebase بتاعنا
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { idToken, title, body: message } = body;
+  const { idToken, title, body: message, imageUrl } = body;
 
   if (!(await isValidToken(idToken ?? ""))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -68,7 +69,7 @@ export async function POST(request: Request) {
   }
 
   const subscriptions = await getAllPushSubscriptionsOnce();
-  const payload = JSON.stringify({ title, body: message });
+  const payload = JSON.stringify({ title, body: message, image: imageUrl });
 
   let sent = 0;
   let failed = 0;
