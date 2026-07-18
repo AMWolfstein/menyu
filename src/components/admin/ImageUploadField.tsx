@@ -48,13 +48,13 @@ export default function ImageUploadField({
             <ProductImagePlaceholder className="h-full w-full" logoUrl={logoUrl} />
           )}
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
             disabled={uploading}
-            className="text-xs text-muted file:ml-2 file:rounded-lg file:border file:border-line file:bg-base/60 file:px-2 file:py-1 file:text-xs file:text-cream"
+            className="w-full max-w-full text-xs text-muted file:ml-2 file:rounded-lg file:border file:border-line file:bg-base/60 file:px-2 file:py-1 file:text-xs file:text-cream"
           />
           {uploading && <span className="text-xs text-muted">جارٍ الرفع...</span>}
           {error && <span className="text-xs text-chili">{error}</span>}

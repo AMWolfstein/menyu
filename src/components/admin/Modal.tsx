@@ -30,7 +30,7 @@ export default function Modal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 shadow-xl sm:max-w-lg sm:rounded-2xl"
+        className="max-h-[90vh] w-full overflow-x-hidden overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 shadow-xl sm:max-w-lg sm:rounded-2xl"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-cream">{title}</h2>
