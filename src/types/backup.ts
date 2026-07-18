@@ -27,5 +27,10 @@ export type BackupConfig = {
   dayOfWeek?: number;
   /** للتكرار الشهري — 1 لـ 31. */
   dayOfMonth?: number;
+  /**
+   * الساعة المفضّلة (0-23) — معلوماتية فقط، مبتتحكمش في وقت تشغيل الـ cron
+   * الفعلي. الوقت الحقيقي ثابت في vercel.json ومحتاج تعديل كود وديبلوي جديد.
+   */
+  preferredHour?: number;
   lastRunAt?: Timestamp;
 };
