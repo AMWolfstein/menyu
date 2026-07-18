@@ -6,10 +6,8 @@ import { getAllPushSubscriptionsOnce } from "@/lib/firestore";
 
 type NotifyBody = {
   idToken?: string;
-  itemName?: string;
-  supplierName?: string;
-  badge?: string;
-  discountPercent?: number;
+  title?: string;
+  body?: string;
 };
 
 /** بيتأكد إن الـ idToken فعلاً صادر من مستخدم حقيقي في مشروع Firebase بتاعنا
@@ -30,19 +28,21 @@ async function isValidToken(idToken: string): Promise<boolean> {
   return Array.isArray(data.users) && data.users.length > 0;
 }
 
+/** مسار عام بيبعت إشعار Push لكل المشتركين — مستخدم من أكتر من مكان
+ * (خصومات، أصناف جديدة، إلخ)، كل واحد بيبني نص الإشعار بتاعه بنفسه. */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as NotifyBody | null;
   if (!body) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { idToken, itemName, supplierName, badge, discountPercent } = body;
+  const { idToken, title, body: message } = body;
 
   if (!(await isValidToken(idToken ?? ""))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!itemName || !discountPercent) {
-    return NextResponse.json({ error: "Missing itemName/discountPercent" }, { status: 400 });
+  if (!title || !message) {
+    return NextResponse.json({ error: "Missing title/body" }, { status: 400 });
   }
 
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -68,12 +68,7 @@ export async function POST(request: Request) {
   }
 
   const subscriptions = await getAllPushSubscriptionsOnce();
-
-  const details = [supplierName, badge].filter(Boolean).join(" - ");
-  const payload = JSON.stringify({
-    title: "خصومات 🔥",
-    body: `يوجد خصم ${discountPercent}% على ${itemName}${details ? ` (${details})` : ""}`,
-  });
+  const payload = JSON.stringify({ title, body: message });
 
   let sent = 0;
   let failed = 0;
