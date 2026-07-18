@@ -254,8 +254,9 @@ export function addItem(data: {
   supplierId?: string;
   order: number;
 }): Promise<void> {
-  const id = data.name.trim().toLowerCase().replace(/\s+/g, "-").slice(0, 40) || crypto.randomUUID();
-  return setDoc(doc(itemsCol, id), { ...data, createdAt: serverTimestamp() });
+  // معرّف عشوائي دايمًا (مش slug من الاسم) — عشان لو الأدمن ضاف صنفين
+  // بنفس الاسم (زي مورد مختلف أو حالة مختلفة)، التاني ميدوسش على الأول.
+  return setDoc(doc(itemsCol, crypto.randomUUID()), { ...data, createdAt: serverTimestamp() });
 }
 
 export function updateItem(

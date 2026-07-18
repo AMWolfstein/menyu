@@ -17,6 +17,9 @@ const badgeStyles: Record<NonNullable<MenuItem["badge"]>, string> = {
   حار: "bg-chili text-white border-chili",
 };
 
+const plusButtonClass =
+  "flex w-full items-center justify-center gap-1.5 rounded-full bg-gold px-4 py-3 text-sm font-bold text-base transition-all duration-200 hover:bg-gold-soft active:scale-95";
+
 export default function MenuItemCard({
   item,
   currency,
@@ -50,13 +53,17 @@ export default function MenuItemCard({
     ? Math.round(basePrice * (1 - discountPercent / 100))
     : basePrice;
   const outOfStock = item.available === false;
+  // لو الوصف نفس نص البادج بالظبط (زي "حار" فوق الصورة وتحت المورد كمان)،
+  // بيبقى تكرار بلا فايدة — بنخفيه بدل ما يتعرض مرتين.
+  const showDescription =
+    item.description && item.description.trim().toLowerCase() !== item.badge?.trim().toLowerCase();
 
   return (
     <article
-      className={`group flex h-full flex-col overflow-hidden rounded-2xl border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
+      className={`group flex h-full flex-col overflow-hidden rounded-2xl border bg-surface shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
         isBestSeller
-          ? "border-highlight bg-highlight/5 ring-2 ring-highlight/50"
-          : "border-line bg-surface"
+          ? "border-highlight/50 shadow-[0_10px_28px_-10px_rgba(238,207,54,0.5)]"
+          : "border-line"
       }`}
     >
       <div className="relative aspect-square w-full shrink-0 bg-surface-2">
@@ -79,36 +86,44 @@ export default function MenuItemCard({
           </div>
         )}
         {hasDiscount && (
-          <span className="absolute start-2 top-2 z-10 rounded-full bg-chili px-2 py-1 text-xs font-bold text-white shadow">
+          <span className="absolute start-2 top-2 z-10 rounded-full bg-chili px-2.5 py-1 text-xs font-bold text-white shadow-sm">
             خصم <span dir="ltr">{discountPercent}%</span>
           </span>
         )}
-        {item.badge && (
-          <span
-            className={`absolute end-2 top-2 z-10 rounded-full border px-2 py-0.5 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
-          >
-            {item.badge}
+        {isBestSeller ? (
+          <span className="absolute end-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-gradient-to-l from-highlight to-amber-400 px-2.5 py-1 text-[11px] font-bold text-amber-950 shadow-sm">
+            الأكثر مبيعاً <span aria-hidden>🔥</span>
           </span>
+        ) : (
+          item.badge && (
+            <span
+              className={`absolute end-2 top-2 z-10 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-sm ${badgeStyles[item.badge]}`}
+            >
+              {item.badge}
+            </span>
+          )
         )}
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-base font-bold text-cream">{item.name}</h3>
-        {item.supplierName && (
-          <button
-            type="button"
-            onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
-            className="mt-0.5 block text-start text-sm text-muted hover:text-gold hover:underline"
-          >
-            {item.supplierName}
-          </button>
-        )}
+        <div className="flex-1 space-y-1">
+          <h3 className="font-display text-base font-bold leading-snug text-cream">{item.name}</h3>
+          {item.supplierName && (
+            <button
+              type="button"
+              onClick={() => item.supplierId && onSupplierClick?.(item.supplierId, item.supplierName!)}
+              className="block text-start text-sm text-muted hover:text-gold hover:underline"
+            >
+              {item.supplierName}
+            </button>
+          )}
 
-        <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted">
-          {item.description}
-        </p>
+          {showDescription && (
+            <p className="text-sm leading-relaxed text-muted">{item.description}</p>
+          )}
+        </div>
 
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-3 flex flex-col gap-3">
           {hasVariants && (
             <div className="flex flex-wrap gap-1.5">
               {variants.map((v) => (
@@ -146,7 +161,7 @@ export default function MenuItemCard({
           {outOfStock && qtyInCart === 0 ? (
             <button
               disabled
-              className="w-full cursor-not-allowed rounded-lg bg-line px-3 py-2.5 text-sm font-bold text-muted"
+              className="w-full cursor-not-allowed rounded-full bg-line px-4 py-3 text-sm font-bold text-muted"
             >
               نفذ مؤقتًا
             </button>
@@ -163,15 +178,16 @@ export default function MenuItemCard({
                   ...(hasDiscount && { originalPrice: basePrice }),
                 })
               }
-              className="w-full rounded-lg bg-gold px-3 py-2.5 text-sm font-bold text-base transition-all duration-200 hover:bg-gold-soft active:scale-95"
+              className={plusButtonClass}
             >
-              + أضف
+              <span aria-hidden className="text-base leading-none">+</span>
+              <span>أضف</span>
             </button>
           ) : (
-            <div className="flex w-full items-center justify-center gap-1 rounded-lg border border-gold/40">
+            <div className="flex w-full items-center justify-center gap-1 rounded-full border border-gold/40">
               <button
                 onClick={() => setQty(cartLineId, qtyInCart - 1)}
-                className="flex-1 py-2.5 text-gold transition-all duration-200 hover:text-gold-soft active:scale-95"
+                className="flex-1 py-3 text-gold transition-all duration-200 hover:text-gold-soft active:scale-95"
                 aria-label="إنقاص الكمية"
               >
                 −
@@ -180,7 +196,7 @@ export default function MenuItemCard({
               <button
                 onClick={() => !outOfStock && setQty(cartLineId, qtyInCart + 1)}
                 disabled={outOfStock}
-                className={`flex-1 py-2.5 transition-all duration-200 active:scale-95 ${
+                className={`flex-1 py-3 transition-all duration-200 active:scale-95 ${
                   outOfStock ? "cursor-not-allowed text-line" : "text-gold hover:text-gold-soft"
                 }`}
                 aria-label="زيادة الكمية"
