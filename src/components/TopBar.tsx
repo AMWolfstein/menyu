@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useInstallPrompt } from "@/hooks/useInstallPrompt";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import type { Restaurant } from "@/types/menu";
 
 export default function TopBar({
@@ -18,6 +19,13 @@ export default function TopBar({
 }) {
   const { itemCount } = useCart();
   const { canInstall, promptInstall } = useInstallPrompt();
+  const {
+    supported: notificationsSupported,
+    subscribed: notificationsSubscribed,
+    loading: notificationsLoading,
+    subscribe: subscribeNotifications,
+    unsubscribe: unsubscribeNotifications,
+  } = usePushNotifications();
   const [showSearch, setShowSearch] = useState(false);
 
   const closeSearch = () => {
@@ -88,6 +96,32 @@ export default function TopBar({
                     <rect x="5" y="2.5" width="14" height="19" rx="2.5" />
                     <path d="M12 8v6m0 0-2.5-2.5M12 14l2.5-2.5" />
                     <path d="M9.5 18.5h5" />
+                  </svg>
+                </button>
+              )}
+              {notificationsSupported && (
+                <button
+                  type="button"
+                  onClick={notificationsSubscribed ? unsubscribeNotifications : subscribeNotifications}
+                  disabled={notificationsLoading}
+                  aria-label={notificationsSubscribed ? "إلغاء إشعارات الخصومات" : "تفعيل إشعارات الخصومات"}
+                  className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors disabled:opacity-50 ${
+                    notificationsSubscribed
+                      ? "text-gold hover:bg-gold/10"
+                      : "text-muted hover:bg-surface-2 hover:text-cream"
+                  }`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill={notificationsSubscribed ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth={1.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
+                    <path d="M6 10a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 14 6 10Z" />
+                    <path d="M10 19a2 2 0 0 0 4 0" />
                   </svg>
                 </button>
               )}

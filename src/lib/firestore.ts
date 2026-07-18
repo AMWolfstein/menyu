@@ -29,6 +29,7 @@ import type {
 } from "@/types/menu";
 import type { Order } from "@/types/order";
 import type { BackupConfig } from "@/types/backup";
+import type { PushSubscriptionRecord } from "@/types/push";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
   order: number;
@@ -299,4 +300,37 @@ export function subscribeOrders(cb: (orders: Order[]) => void): Unsubscribe {
   return onSnapshot(q, (snap) => {
     cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Order, "id">) })));
   });
+}
+
+// ---------- اشتراكات إشعارات الخصومات ----------
+// الكتابة مفتوحة لأي زبون (بيفعّل الإشعارات من غير تسجيل دخول)، والقراءة
+// مقصورة على الأدمن — نفس منطق orders. شوف firestore.rules.
+
+const pushSubscriptionsCol = collection(db, "pushSubscriptions");
+
+/** تحويل رابط الاشتراك لمعرّف مستند آمن وثابت — بيمنع تكرار نفس الجهاز لو
+ * الزبون ضغط على زرار التفعيل أكتر من مرة. */
+function subscriptionId(endpoint: string): string {
+  return btoa(endpoint).replace(/[+/=]/g, "_");
+}
+
+export function savePushSubscription(sub: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}): Promise<void> {
+  return setDoc(doc(pushSubscriptionsCol, subscriptionId(sub.endpoint)), {
+    endpoint: sub.endpoint,
+    keys: sub.keys,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export function removePushSubscription(endpoint: string): Promise<void> {
+  return deleteDoc(doc(pushSubscriptionsCol, subscriptionId(endpoint)));
+}
+
+/** قراءة كل الاشتراكات مرة واحدة — تُستخدم في مسار الإرسال السيرفري بس. */
+export async function getAllPushSubscriptionsOnce(): Promise<PushSubscriptionRecord[]> {
+  const snap = await getDocs(pushSubscriptionsCol);
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<PushSubscriptionRecord, "id">) }));
 }
