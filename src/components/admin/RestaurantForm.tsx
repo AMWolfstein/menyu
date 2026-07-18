@@ -24,7 +24,6 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
     ...(restaurant ?? emptyRestaurant),
     imageUrl: restaurant?.imageUrl ?? "",
     themeColor: restaurant?.themeColor ?? "#2f3c93",
-    branchesEnabled: restaurant?.branchesEnabled ?? false,
     facebookUrl: restaurant?.facebookUrl ?? "",
     whatsappUrl: restaurant?.whatsappUrl ?? "",
     instagramUrl: restaurant?.instagramUrl ?? "",
@@ -171,15 +170,6 @@ export default function RestaurantForm({ restaurant }: { restaurant: Restaurant 
           />
         </div>
       </div>
-
-      <label className="mt-4 flex items-center gap-2 text-sm text-cream">
-        <input
-          type="checkbox"
-          checked={form.branchesEnabled ?? false}
-          onChange={(e) => setForm({ ...form, branchesEnabled: e.target.checked })}
-        />
-        تفعيل نظام الفروع (يظهر اختيار الفرع للزبون عند الطلب)
-      </label>
 
       <div className="mt-4 flex items-center gap-3">
         <button

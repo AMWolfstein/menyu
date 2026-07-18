@@ -14,12 +14,14 @@ import OrdersPanel from "@/components/admin/OrdersPanel";
 import PosterLinksManager from "@/components/admin/PosterLinksManager";
 import HeroImagesManager from "@/components/admin/HeroImagesManager";
 import BackupPanel from "@/components/admin/BackupPanel";
+import BranchesToggle from "@/components/admin/BranchesToggle";
 
 const TABS = [
   { id: "items", label: "الأصناف والفئات" },
   { id: "orders", label: "سجل الطلبات" },
   { id: "poster", label: "روابط صور المشاركة" },
   { id: "settings", label: "الإعدادات" },
+  { id: "cart-data", label: "بيانات السلة" },
   { id: "backup", label: "النسخ الاحتياطي" },
 ] as const;
 
@@ -106,6 +108,14 @@ export default function AdminDashboardPage() {
               <RestaurantForm restaurant={restaurant} key={restaurant ? "ready" : "empty"} />
             )}
             <HeroImagesManager />
+          </div>
+        )}
+
+        {activeTab === "cart-data" && (
+          <div className="space-y-6">
+            {!loading && (
+              <BranchesToggle restaurant={restaurant} key={restaurant ? "ready" : "empty"} />
+            )}
             <SimpleListManager title="الفروع" items={branches} api={branchesApi} />
             <SimpleListManager
               title="مناطق التوصيل"
