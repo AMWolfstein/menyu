@@ -9,6 +9,8 @@ export type CartItem = {
   itemId: string;
   name: string;
   variantLabel?: string;
+  supplierName?: string;
+  badge?: string;
   price: number;
   /** السعر الأصلي قبل الخصم — بيتحط بس لو الصنف كان عليه خصم وقت الإضافة، تُستخدم لحساب "وفّرت" في رسالة الواتساب. */
   originalPrice?: number;

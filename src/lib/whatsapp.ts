@@ -38,11 +38,15 @@ export function buildWhatsAppOrderUrl(
   const zoneName = deliveryZones.find((z) => z.id === checkout.zoneId)?.name;
   const paymentMethodName = paymentMethods.find((p) => p.id === checkout.paymentMethodId)?.name;
 
-  const itemLines = items.flatMap((item) => [
-    `🔹 ${item.qty} × ${item.name}${item.variantLabel ? ` (${item.variantLabel})` : ""}`,
-    `   السعر: ${formatPrice(item.price, restaurant.currency)}`,
-    `   الإجمالي: ${formatPrice(item.price * item.qty, restaurant.currency)}`,
-  ]);
+  const itemLines = items.flatMap((item) => {
+    const details = [item.supplierName?.trim(), item.badge].filter(Boolean).join(" - ");
+    return [
+      `🔹 ${item.qty} × ${item.name}${item.variantLabel ? ` (${item.variantLabel})` : ""}`,
+      ...(details ? [`   ${details}`] : []),
+      `   السعر: ${formatPrice(item.price, restaurant.currency)}`,
+      `   الإجمالي: ${formatPrice(item.price * item.qty, restaurant.currency)}`,
+    ];
+  });
 
   const total = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const savings = items.reduce(

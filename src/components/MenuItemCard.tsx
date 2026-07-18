@@ -173,6 +173,8 @@ export default function MenuItemCard({
                   itemId: item.id,
                   name: item.name,
                   variantLabel: selectedVariant?.label,
+                  supplierName: item.supplierName,
+                  badge: item.badge,
                   price: payablePrice,
                   imageUrl: item.imageUrl,
                   ...(hasDiscount && { originalPrice: basePrice }),
