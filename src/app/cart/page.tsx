@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
@@ -32,6 +33,7 @@ function TrashIcon({ className }: { className?: string }) {
 }
 
 export default function CartPage() {
+  const router = useRouter();
   const { restaurant, loading } = useMenuData();
   const { items, itemCount, total, removeItem, setQty, clearCart } = useCart();
   const [checkout, setCheckout] = useState<CheckoutInfo>(emptyCheckoutInfo);
@@ -76,7 +78,9 @@ export default function CartPage() {
   );
 
   const handleClear = () => {
-    if (window.confirm("إفراغ السلة بالكامل؟")) clearCart();
+    if (!window.confirm("إفراغ السلة بالكامل؟")) return;
+    clearCart();
+    router.push("/");
   };
 
   const handleSend = () => {
@@ -107,6 +111,7 @@ export default function CartPage() {
       // فشل حفظ السجل مش لازم يمنع إرسال الطلب نفسه للزبون.
     });
     clearCart();
+    router.push("/");
   };
 
   if (itemCount === 0) {
