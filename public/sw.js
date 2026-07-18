@@ -44,3 +44,35 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
   );
 });
+
+// إشعارات الخصومات (Web Push) — الرسالة بتوصل كـ JSON من مسار الإرسال
+// السيرفري وبتتحول لإشعار حقيقي هنا حتى لو الموقع/التطبيق مقفول.
+self.addEventListener("push", (event) => {
+  let data = { title: "خصومات", body: "" };
+  try {
+    data = event.data.json();
+  } catch {
+    // تجاهل — لو الرسالة مش JSON صالح
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "خصومات", {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      dir: "rtl",
+      lang: "ar",
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsList) => {
+      const existing = clientsList.find((c) => "focus" in c);
+      if (existing) return existing.focus();
+      return self.clients.openWindow("/");
+    })
+  );
+});

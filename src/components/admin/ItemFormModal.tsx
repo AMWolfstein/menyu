@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { deleteField, Timestamp } from "firebase/firestore";
 import { addItem, updateItem } from "@/lib/firestore";
+import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
+import { notifyDiscount } from "@/lib/notifyDiscount";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { MenuItem, MenuItemVariant, SimpleListItem } from "@/types/menu";
 import Modal from "@/components/admin/Modal";
@@ -253,6 +255,13 @@ export default function ItemFormModal({
       return;
     }
 
+    // نبعت إشعار بس لو الخصم جديد فعلاً أو نسبته اتغيّرت — مش في كل حفظة
+    // متكررة لنفس الخصم.
+    const newDiscountPercent = getItemMaxDiscountPercent(cleaned);
+    const previousDiscountPercent = item ? getItemMaxDiscountPercent(item) : 0;
+    const shouldNotify =
+      itemHasAnyDiscount(cleaned) && newDiscountPercent !== previousDiscountPercent;
+
     setSaving(true);
     try {
       if (item) {
@@ -286,6 +295,14 @@ export default function ItemFormModal({
           ...(cleaned.discountPrice != null && { discountPrice: cleaned.discountPrice }),
           ...(cleaned.discountEndsAt && { discountEndsAt: cleaned.discountEndsAt }),
           ...(cleaned.variants.length > 0 && { variants: cleaned.variants }),
+        });
+      }
+      if (shouldNotify) {
+        notifyDiscount({
+          itemName: draft.name,
+          supplierName: suppliers.find((s) => s.id === draft.supplierId)?.name,
+          badge: draft.badge || undefined,
+          discountPercent: newDiscountPercent,
         });
       }
       onClose();
