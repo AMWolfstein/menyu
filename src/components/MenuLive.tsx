@@ -12,7 +12,7 @@ import { useHeroImages } from "@/hooks/useHeroImages";
 import { useGridLayout } from "@/hooks/useGridLayout";
 import { suppliersApi } from "@/lib/firestore";
 import { itemHasAnyDiscount, getItemMaxDiscountPercent, getItemSortPrice } from "@/lib/discount";
-import { getBestSellers, BEST_SELLER_BADGE_COUNT } from "@/lib/bestSellers";
+import { getBestSellers, BEST_SELLER_BADGE_COUNT, BEST_SELLERS_TAB_COUNT } from "@/lib/bestSellers";
 
 const PAGE_SIZE = 12; // يتقسم بالظبط على 2 (موبايل) و3 (شاشات كبيرة) و4 أعمدة
 
@@ -101,14 +101,17 @@ export default function MenuLive() {
         .filter((item) => itemHasAnyDiscount(item))
         .sort((a, b) => getItemMaxDiscountPercent(b) - getItemMaxDiscountPercent(a));
     }
+    if (activeCategory === "bestsellers") {
+      return getBestSellers(allItems, BEST_SELLERS_TAB_COUNT);
+    }
     return activeCategory === "all"
       ? allItems
       : allItems.filter((item) => item.categoryId === activeCategory);
   }, [allItems, activeCategory, activeSupplier, searchQuery]);
 
   const bestSellerIds = useMemo(() => {
-    return new Set(getBestSellers(categories, BEST_SELLER_BADGE_COUNT).map((item) => item.id));
-  }, [categories]);
+    return new Set(getBestSellers(allItems, BEST_SELLER_BADGE_COUNT).map((item) => item.id));
+  }, [allItems]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -162,6 +165,7 @@ export default function MenuLive() {
         items={[
           { id: "all", name: "الكل" },
           { id: "discounts", name: "خصومات", icon: "🏷️" },
+          { id: "bestsellers", name: "الأكثر مبيعاً", icon: "🔥" },
           ...categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon })),
         ]}
         active={activeCategory}
@@ -186,7 +190,7 @@ export default function MenuLive() {
           </div>
         )}
 
-        {activeCategory !== "discounts" && (
+        {activeCategory !== "discounts" && activeCategory !== "bestsellers" && (
           <div className="mb-4 flex items-center justify-end gap-2">
             <label htmlFor="sort-select" className="text-xs text-muted">
               الترتيب:
