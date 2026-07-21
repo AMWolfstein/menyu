@@ -1,7 +1,7 @@
 import type { PosterLink, PosterLinkPlatform } from "@/types/menu";
 
 // نفس ملاحظة MenuPosterCard.tsx: العنصر ده بيتعرض جوّا منطقة بتتحوّل
-// لصورة (html2canvas)، فكل الألوان لازم تكون inline styles بس، مش كلاسات
+// لصورة (html-to-image)، فكل الألوان لازم تكون inline styles بس، مش كلاسات
 // Tailwind — عشان كده الألوان بتوصل كـ prop من المكوّن اللي بيستخدمه.
 
 type PosterColors = {

@@ -12,10 +12,10 @@ import {
 } from "@/lib/discount";
 import PosterFooterLinks from "@/components/PosterFooterLinks";
 
-// اللوح ده بيتعرض كصفحة ويب عادية وبيتلقط كمان كصورة (html2canvas) بنفس
+// اللوح ده بيتعرض كصفحة ويب عادية وبيتلقط كمان كصورة (html-to-image) بنفس
 // الشكل بالظبط، فكل حاجة جوّا المنطقة الملتقطة (boardRef) لازم تبقى inline
 // styles بس — نفس قاعدة MenuPosterCard.tsx القديمة (Tailwind v4 بيولّد
-// ألوان lab()/oklch() مش مفهومة لـ html2canvas).
+// ألوان lab()/oklch() مش مفهومة لمكتبات الالتقاط دي).
 
 const COLORS = {
   bg: "#f4f8fc",
@@ -59,15 +59,15 @@ export default function MenuBoard({
         });
       }
 
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(boardRef.current, {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(boardRef.current, {
         backgroundColor: COLORS.bg,
-        scale: 2,
-        useCORS: true,
+        pixelRatio: 2,
+        cacheBust: true,
       });
       const link = document.createElement("a");
       link.download = `${restaurant.name}-المنيو.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } catch {
       setError(true);
