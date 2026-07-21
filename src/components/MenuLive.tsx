@@ -6,15 +6,45 @@ import HeroCarousel from "@/components/HeroCarousel";
 import CategoryNav from "@/components/CategoryNav";
 import MenuItemCard from "@/components/MenuItemCard";
 import SocialLinks from "@/components/SocialLinks";
-import { useMenuData } from "@/hooks/useMenuData";
+import { useMenuData, type LiveMenuItem } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { useHeroImages } from "@/hooks/useHeroImages";
 import { useGridLayout } from "@/hooks/useGridLayout";
 import { suppliersApi } from "@/lib/firestore";
-import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
+import { itemHasAnyDiscount, getItemMaxDiscountPercent, getItemSortPrice } from "@/lib/discount";
 import { getBestSellers, BEST_SELLER_BADGE_COUNT } from "@/lib/bestSellers";
 
 const PAGE_SIZE = 12; // يتقسم بالظبط على 2 (موبايل) و3 (شاشات كبيرة) و4 أعمدة
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "الأحدث أولاً" },
+  { value: "oldest", label: "الأقدم أولاً" },
+  { value: "priceAsc", label: "السعر: من الأقل للأعلى" },
+  { value: "priceDesc", label: "السعر: من الأعلى للأقل" },
+  { value: "supplierAsc", label: "المورد (أ-ي)" },
+] as const;
+
+type SortOption = (typeof SORT_OPTIONS)[number]["value"];
+
+function sortItems<T extends LiveMenuItem & { supplierName?: string }>(
+  items: T[],
+  sortOption: SortOption
+): T[] {
+  const sorted = [...items];
+  switch (sortOption) {
+    case "oldest":
+      return sorted.sort((a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0));
+    case "priceAsc":
+      return sorted.sort((a, b) => getItemSortPrice(a) - getItemSortPrice(b));
+    case "priceDesc":
+      return sorted.sort((a, b) => getItemSortPrice(b) - getItemSortPrice(a));
+    case "supplierAsc":
+      return sorted.sort((a, b) => (a.supplierName ?? "").localeCompare(b.supplierName ?? "", "ar"));
+    case "newest":
+    default:
+      return sorted.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+  }
+}
 
 function MenuSkeleton() {
   return (
@@ -40,19 +70,19 @@ export default function MenuLive() {
     null
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [page, setPage] = useState(1);
 
   const allItems = useMemo(() => {
-    return categories
-      .flatMap((category) =>
-        category.items.map((item) => ({
-          ...item,
-          categoryId: category.id,
-          supplierName: suppliers.find((s) => s.id === item.supplierId)?.name,
-        }))
-      )
-      .sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
-  }, [categories, suppliers]);
+    const items = categories.flatMap((category) =>
+      category.items.map((item) => ({
+        ...item,
+        categoryId: category.id,
+        supplierName: suppliers.find((s) => s.id === item.supplierId)?.name,
+      }))
+    );
+    return sortItems(items, sortOption);
+  }, [categories, suppliers, sortOption]);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -119,6 +149,11 @@ export default function MenuLive() {
     setPage(1);
   };
 
+  const handleSortChange = (value: SortOption) => {
+    setSortOption(value);
+    setPage(1);
+  };
+
   return (
     <>
       <TopBar restaurant={restaurant} searchQuery={searchQuery} onSearchChange={handleSearchChange} />
@@ -148,6 +183,26 @@ export default function MenuLive() {
             >
               ✕ إلغاء
             </button>
+          </div>
+        )}
+
+        {activeCategory !== "discounts" && (
+          <div className="mb-4 flex items-center justify-end gap-2">
+            <label htmlFor="sort-select" className="text-xs text-muted">
+              الترتيب:
+            </label>
+            <select
+              id="sort-select"
+              value={sortOption}
+              onChange={(e) => handleSortChange(e.target.value as SortOption)}
+              className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-cream focus:border-gold focus:outline-none"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
