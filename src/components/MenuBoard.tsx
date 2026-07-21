@@ -15,20 +15,170 @@ import PosterFooterLinks from "@/components/PosterFooterLinks";
 // اللوح ده بيتعرض كصفحة ويب عادية وبيتلقط كمان كصورة (html-to-image) بنفس
 // الشكل بالظبط، فكل حاجة جوّا المنطقة الملتقطة (boardRef) لازم تبقى inline
 // styles بس — نفس قاعدة MenuPosterCard.tsx القديمة (Tailwind v4 بيولّد
-// ألوان lab()/oklch() مش مفهومة لمكتبات الالتقاط دي).
+// ألوان lab()/oklch() مش مفهومة لمكتبات الالتقاط دي). عرض اللوح ثابت (مش
+// نسبي) عشان الصورة الناتجة تبقى دايمًا بـ 3 أعمدة، حتى لو اتحمّلت من
+// موبايل بشاشة ضيقة — المعاينة على الشاشة بتتمرر أفقيًا لو الشاشة أضيق.
 
 const COLORS = {
   bg: "#f4f8fc",
-  navy: "#2f3c93",
+  brand: "#2f3c93",
   red: "#e2231a",
+  gold: "#eecf36",
   black: "#1a2035",
   muted: "#6b7690",
   white: "#ffffff",
   line: "#e1e7f2",
 };
 
+const BADGE_COLORS: Record<string, string> = {
+  عادي: "#475569",
+  نباتي: "#16a34a",
+  حار: COLORS.red,
+};
+
+const BOARD_WIDTH = 1200;
+const COLUMN_COUNT = 3;
+
 type BoardItem = LiveMenuItem & { supplierName?: string };
 type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
+
+// html-to-image بيفشل يترجم CSS multi-column (column-count) صح، فبدل ما
+// نعتمد عليه بنوزّع الفئات يدويًا على أعمدة (flexbox عادي) حسب عدد أصنافها
+// — كل فئة بتتحط في أقصر عمود لحد اللحظة دي، عشان الأعمدة تفضل متوازنة.
+function distributeIntoColumns(
+  categories: BoardCategory[],
+  columnCount: number
+): BoardCategory[][] {
+  const columns: BoardCategory[][] = Array.from({ length: columnCount }, () => []);
+  const columnLoad = new Array(columnCount).fill(0);
+  for (const category of categories) {
+    let shortest = 0;
+    for (let i = 1; i < columnCount; i++) {
+      if (columnLoad[i] < columnLoad[shortest]) shortest = i;
+    }
+    columns[shortest].push(category);
+    columnLoad[shortest] += category.items.length + 1;
+  }
+  return columns;
+}
+
+function CategoryCard({
+  category,
+  restaurant,
+}: {
+  category: BoardCategory;
+  restaurant: Restaurant;
+}) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <div
+        style={{
+          padding: "10px 14px",
+          textAlign: "center",
+          fontSize: 15,
+          fontWeight: 800,
+          color: COLORS.white,
+          backgroundColor: COLORS.brand,
+          borderBottom: `3px solid ${COLORS.gold}`,
+          borderRadius: "10px 10px 0 0",
+        }}
+      >
+        {category.icon} {category.name}
+      </div>
+
+      <div
+        style={{
+          border: `1px solid ${COLORS.line}`,
+          borderTop: "none",
+          borderRadius: "0 0 10px 10px",
+          padding: "4px 12px",
+        }}
+      >
+        {category.items.map((item) => {
+          const variant = pickCheapestVariant(item);
+          const fields = getVariantDiscountFields(item, variant);
+          const discounted = isDiscountActive(fields);
+          const percent = getDiscountPercent(fields);
+
+          return (
+            <div
+              key={item.id}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 8,
+                padding: "8px 0",
+                borderBottom: `1px solid ${COLORS.line}`,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.black }}>
+                  {item.name}
+                  {variant && (
+                    <span style={{ fontSize: 10.5, fontWeight: 400, color: COLORS.muted }}>
+                      {" "}
+                      ({variant.label})
+                    </span>
+                  )}
+                </div>
+                {(item.supplierName || item.badge) && (
+                  <div style={{ marginTop: 2, fontSize: 10.5 }}>
+                    {item.supplierName && (
+                      <span style={{ color: COLORS.muted }}>{item.supplierName}</span>
+                    )}
+                    {item.supplierName && item.badge && (
+                      <span style={{ color: COLORS.muted }}> · </span>
+                    )}
+                    {item.badge && (
+                      <span
+                        style={{ fontWeight: 700, color: BADGE_COLORS[item.badge] ?? COLORS.muted }}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
+                {discounted && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: COLORS.white,
+                      backgroundColor: COLORS.red,
+                      borderRadius: 9999,
+                      padding: "1px 6px",
+                    }}
+                  >
+                    خصم <span dir="ltr">{percent}%</span>
+                  </span>
+                )}
+                {discounted && (
+                  <span style={{ fontSize: 10, color: COLORS.muted, textDecoration: "line-through" }}>
+                    {formatPrice(fields.price, restaurant.currency)}
+                  </span>
+                )}
+                <span
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 800,
+                    color: discounted ? COLORS.red : COLORS.black,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatPrice(discounted ? fields.discountPrice! : fields.price, restaurant.currency)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function MenuBoard({
   categories,
@@ -62,15 +212,65 @@ export default function MenuBoard({
         });
       }
 
+      // html-to-image بيفشل يلتقط صح لما العنصر المُلتقط عنده أكتر من طفل
+      // فرعي معقّد جنب بعض (اتأكدنا إن التقاط اللوح كله بيرسم عمود واحد بس
+      // ويسيب الباقي فاضي، بينما التقاط كل قطعة (الهيدر / كل عمود / الفوتر)
+      // لوحده بيطلع مطابق تمامًا). فبنلتقط كل قطعة على حدة ونركّبهم بعدين
+      // على canvas واحد باستخدام إحداثياتهم الحقيقية من التخطيط الحي.
+      const scale = 2;
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(boardRef.current, {
-        backgroundColor: COLORS.bg,
-        pixelRatio: 2,
-        cacheBust: true,
-      });
+      const boardRect = boardRef.current.getBoundingClientRect();
+      const pieceEls = Array.from(
+        boardRef.current.querySelectorAll<HTMLElement>("[data-capture-piece]")
+      );
+
+      // بنلتقط القطع واحدة ورا التانية (مش بالتوازي) — html-to-image مش
+      // آمن مع نداءات متزامنة (حالة داخلية مشتركة بتتلخبط لو اشتغل أكتر
+      // من التقاط في نفس الوقت).
+      const pieces: { img: HTMLImageElement; x: number; y: number; width: number; height: number }[] = [];
+      for (const el of pieceEls) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) continue;
+        const dataUrl = await toPng(el, {
+          pixelRatio: scale,
+          cacheBust: true,
+          backgroundColor: COLORS.bg,
+        });
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("piece image failed to load"));
+          img.src = dataUrl;
+        });
+        pieces.push({
+          img,
+          x: rect.left - boardRect.left,
+          y: rect.top - boardRect.top,
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(boardRect.width * scale);
+      canvas.height = Math.round(boardRect.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas context unavailable");
+      ctx.fillStyle = COLORS.bg;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      for (const piece of pieces) {
+        ctx.drawImage(
+          piece.img,
+          Math.round(piece.x * scale),
+          Math.round(piece.y * scale),
+          Math.round(piece.width * scale),
+          Math.round(piece.height * scale)
+        );
+      }
+
       const link = document.createElement("a");
       link.download = `${restaurant.name}-المنيو.png`;
-      link.href = dataUrl;
+      link.href = canvas.toDataURL("image/png");
       link.click();
     } catch {
       setError(true);
@@ -81,197 +281,90 @@ export default function MenuBoard({
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
-      <div
-        ref={boardRef}
-        dir="rtl"
-        style={{
-          width: "100%",
-          maxWidth: 1100,
-          minWidth: 0,
-          backgroundColor: COLORS.bg,
-          padding: "28px 20px",
-          fontFamily: "var(--font-cairo), system-ui, sans-serif",
-        }}
-      >
+      <div className="w-full overflow-x-auto">
         <div
+          ref={boardRef}
+          dir="rtl"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 16,
-            flexWrap: "wrap",
+            width: BOARD_WIDTH,
+            margin: "0 auto",
+            backgroundColor: COLORS.bg,
+            padding: "32px 28px",
+            fontFamily: "var(--font-cairo), system-ui, sans-serif",
           }}
         >
-          {restaurant.imageUrl && (
-            <img
-              src={restaurant.imageUrl}
-              alt={restaurant.name}
-              crossOrigin="anonymous"
-              style={{ height: 64, width: "auto" }}
-            />
-          )}
-          <span
-            style={{
-              fontSize: 44,
-              fontWeight: 900,
-              color: COLORS.red,
-              letterSpacing: 1,
-              lineHeight: 1,
-            }}
-          >
-            MENU
-          </span>
-        </div>
-        {restaurant.tagline && (
-          <p
-            style={{
-              margin: "10px 0 0",
-              textAlign: "center",
-              fontSize: 13,
-              color: COLORS.muted,
-            }}
-          >
-            {restaurant.tagline}
-          </p>
-        )}
-
-        <div
-          style={{
-            marginTop: 28,
-            columnWidth: 380,
-            columnGap: 32,
-          }}
-        >
-          {visibleCategories.map((category) => (
-            <div
-              key={category.id}
-              style={{
-                breakInside: "avoid",
-                marginBottom: 26,
-                display: "inline-block",
-                width: "100%",
-              }}
-            >
-              <h2
-                style={{
-                  margin: 0,
-                  padding: "10px 16px",
-                  textAlign: "center",
-                  fontSize: 16,
-                  fontWeight: 800,
-                  color: COLORS.white,
-                  backgroundColor: COLORS.navy,
-                  borderBottom: `3px solid ${COLORS.red}`,
-                  borderRadius: "8px 8px 0 0",
-                }}
-              >
-                {category.icon} {category.name}
-              </h2>
-
-              <ul style={{ margin: 0, padding: "6px 4px 0", listStyle: "none" }}>
-                {category.items.map((item) => {
-                  const variant = pickCheapestVariant(item);
-                  const fields = getVariantDiscountFields(item, variant);
-                  const discounted = isDiscountActive(fields);
-                  const percent = getDiscountPercent(fields);
-                  return (
-                    <li
-                      key={item.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        padding: "9px 4px",
-                        borderBottom: `1px dashed ${COLORS.line}`,
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 14.5, fontWeight: 700, color: COLORS.black }}>
-                          {item.name}
-                          {variant && (
-                            <span style={{ fontSize: 11, fontWeight: 400, color: COLORS.muted }}>
-                              {" "}
-                              ({variant.label})
-                            </span>
-                          )}
-                        </div>
-                        {(item.supplierName || item.badge) && (
-                          <div style={{ marginTop: 2, fontSize: 11, color: COLORS.muted }}>
-                            {item.supplierName}
-                            {item.supplierName && item.badge ? " · " : ""}
-                            {item.badge}
-                          </div>
-                        )}
-                      </div>
-                      <span
-                        style={{
-                          display: "flex",
-                          alignItems: "baseline",
-                          gap: 6,
-                          flexShrink: 0,
-                        }}
-                      >
-                        {discounted && (
-                          <span
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 700,
-                              color: COLORS.white,
-                              backgroundColor: COLORS.red,
-                              borderRadius: 9999,
-                              padding: "1px 6px",
-                            }}
-                          >
-                            خصم <span dir="ltr">{percent}%</span>
-                          </span>
-                        )}
-                        {discounted && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: COLORS.muted,
-                              textDecoration: "line-through",
-                            }}
-                          >
-                            {formatPrice(fields.price, restaurant.currency)}
-                          </span>
-                        )}
-                        <span
-                          style={{
-                            fontSize: 14.5,
-                            fontWeight: 800,
-                            color: discounted ? COLORS.red : COLORS.black,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {formatPrice(
-                            discounted ? fields.discountPrice! : fields.price,
-                            restaurant.currency
-                          )}
-                        </span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
+          <div data-capture-piece="header">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
+              {restaurant.imageUrl && (
+                <img
+                  src={restaurant.imageUrl}
+                  alt={restaurant.name}
+                  crossOrigin="anonymous"
+                  style={{ height: 72, width: "auto", borderRadius: 12 }}
+                />
+              )}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    letterSpacing: 3,
+                    color: COLORS.brand,
+                    backgroundColor: COLORS.gold,
+                    padding: "4px 14px",
+                    borderRadius: 9999,
+                  }}
+                >
+                  MENU
+                </span>
+                <span
+                  style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: COLORS.brand, lineHeight: 1.2 }}
+                >
+                  {restaurant.name}
+                </span>
+              </div>
             </div>
-          ))}
-        </div>
+            {restaurant.tagline && (
+              <p style={{ margin: "10px 0 0", textAlign: "center", fontSize: 13, color: COLORS.muted }}>
+                {restaurant.tagline}
+              </p>
+            )}
+          </div>
 
-        <PosterFooterLinks
-          links={posterLinks}
-          colors={{
-            navy: COLORS.navy,
-            gold: "#eecf36",
-            red: COLORS.red,
-            dark: COLORS.black,
-            muted: COLORS.muted,
-            gray: "#9ca3af",
-            white: COLORS.white,
-            line: COLORS.line,
-          }}
-        />
+          <div style={{ marginTop: 30, display: "flex", alignItems: "flex-start", gap: 24 }}>
+            {distributeIntoColumns(
+              visibleCategories,
+              Math.min(COLUMN_COUNT, visibleCategories.length)
+            ).map((columnCategories, colIndex) => (
+              <div
+                key={colIndex}
+                data-capture-piece="column"
+                style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
+              >
+                {columnCategories.map((category) => (
+                  <CategoryCard key={category.id} category={category} restaurant={restaurant} />
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div data-capture-piece="footer">
+            <PosterFooterLinks
+              links={posterLinks}
+              colors={{
+                navy: COLORS.brand,
+                gold: COLORS.gold,
+                red: COLORS.red,
+                dark: COLORS.black,
+                muted: COLORS.muted,
+                gray: "#9ca3af",
+                white: COLORS.white,
+                line: COLORS.line,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <button
