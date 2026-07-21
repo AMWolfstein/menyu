@@ -102,7 +102,13 @@ export async function restoreBackup(backupId: string): Promise<void> {
     throw new Error("النسخة الاحتياطية غير موجودة");
   }
   const { data } = backupSnap.data() as { data: BackupSnapshot };
+  await restoreSnapshot(data);
+}
 
+/** نفس منطق restoreBackup، بس ياخد بيانات اللقطة مباشرة — يُستخدم للاسترجاع
+ * من نسخة محفوظة في Firestore ومن ملف نسخة احتياطية مُحمّل من الكمبيوتر
+ * على حد سواء. */
+export async function restoreSnapshot(data: BackupSnapshot): Promise<void> {
   let batch = writeBatch(db);
   let opCount = 0;
   const commitIfFull = async () => {
@@ -161,6 +167,36 @@ export function alreadyRanToday(config: BackupConfig, now: Date = new Date()): b
   if (!config.lastRunAt) return false;
   const last = config.lastRunAt.toDate();
   return last.toDateString() === now.toDateString();
+}
+
+/** بيحمّل بيانات نسخة احتياطية كملف JSON على جهاز الأدمن. */
+export function downloadBackupFile(backup: BackupRecord): void {
+  const dateLabel = backup.createdAt?.toDate().toISOString().slice(0, 10) ?? "backup";
+  const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `blue-freeze-backup-${dateLabel}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** فحص سطحي إن الملف المُحمّل من الكمبيوتر شكله فعلاً لقطة نسخة احتياطية
+ * صالحة قبل ما نحاول نسترجعها — بيحمي من ملف غلط أو تالف يمسح البيانات
+ * الحالية بمحتوى فاضي. */
+export function isValidBackupSnapshot(value: unknown): value is BackupSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    Array.isArray(v.categories) &&
+    Array.isArray(v.items) &&
+    Array.isArray(v.suppliers) &&
+    Array.isArray(v.heroImages) &&
+    Array.isArray(v.branches) &&
+    Array.isArray(v.deliveryZones) &&
+    Array.isArray(v.paymentMethods) &&
+    Array.isArray(v.posterLinks)
+  );
 }
 
 export function deleteBackup(backupId: string): Promise<void> {

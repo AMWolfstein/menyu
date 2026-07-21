@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { subscribeBackupConfig, saveBackupConfig } from "@/lib/firestore";
-import { runBackup, restoreBackup, deleteBackup, subscribeBackups } from "@/lib/backup";
-import type { BackupConfig, BackupFrequency, BackupRecord } from "@/types/backup";
+import {
+  runBackup,
+  restoreBackup,
+  restoreSnapshot,
+  deleteBackup,
+  subscribeBackups,
+  downloadBackupFile,
+  isValidBackupSnapshot,
+} from "@/lib/backup";
+import type { BackupConfig, BackupFrequency, BackupRecord, BackupSnapshot } from "@/types/backup";
 
 const inputClass =
   "rounded-lg border border-line bg-base/60 px-3 py-2 text-sm text-cream placeholder:text-muted focus:border-gold focus:outline-none";
@@ -177,6 +185,95 @@ function ScheduleForm({ config }: { config: BackupConfig | null }) {
   );
 }
 
+function RestoreFromFileSection() {
+  const [pending, setPending] = useState<BackupSnapshot | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [restoring, setRestoring] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canConfirm = confirmText.trim() === RESTORE_CONFIRM_PHRASE;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      if (!isValidBackupSnapshot(parsed)) {
+        window.alert("الملف ده مش نسخة احتياطية صالحة");
+        return;
+      }
+      setPending(parsed);
+      setFileName(file.name);
+      setConfirmText("");
+    } catch {
+      window.alert("تعذّرت قراءة الملف، تأكد إنه ملف JSON صالح");
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!pending) return;
+    setRestoring(true);
+    try {
+      await restoreSnapshot(pending);
+      window.alert("تم الاسترجاع بنجاح");
+      setPending(null);
+      setFileName("");
+      setConfirmText("");
+    } catch {
+      window.alert("فشل الاسترجاع، حاول تاني");
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-line bg-surface/60 p-5">
+      <h2 className="font-display text-lg font-bold text-cream">استرجاع نسخة من الكمبيوتر</h2>
+      <p className="mt-1 text-xs text-muted">
+        اختار ملف نسخة احتياطية (JSON) اتحمّل قبل كده من هنا عشان تسترجعه.
+      </p>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleFileChange}
+        className="mt-3 w-full max-w-full text-xs text-muted file:ml-2 file:rounded-lg file:border file:border-line file:bg-base/60 file:px-3 file:py-2 file:text-xs file:text-cream"
+      />
+
+      {pending && (
+        <div className="mt-3 rounded-lg border border-chili/40 bg-chili/5 p-3">
+          <p className="text-xs text-cream">
+            الملف: <span className="font-bold">{fileName}</span> — {pending.categories.length} فئة ·{" "}
+            {pending.items.length} صنف · {pending.suppliers.length} مورد · {pending.branches.length} فرع
+          </p>
+          <p className="mt-2 text-xs text-chili">
+            هيتم استبدال كل إعدادات لوحة التحكم الحالية بمحتوى الملف ده بالكامل. الإجراء
+            ده نهائي ومينفعش يتراجع فيه. اكتب &quot;{RESTORE_CONFIRM_PHRASE}&quot; للتأكيد.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              className={inputClass}
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder={RESTORE_CONFIRM_PHRASE}
+            />
+            <button
+              type="button"
+              disabled={!canConfirm || restoring}
+              onClick={handleConfirm}
+              className="shrink-0 rounded-lg bg-chili px-3 py-2 text-xs font-bold text-white transition-colors hover:opacity-90 disabled:opacity-40"
+            >
+              {restoring ? "جارٍ الاسترجاع..." : "تنفيذ الاسترجاع"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BackupPanel() {
   const [config, setConfig] = useState<BackupConfig | null | undefined>(undefined);
   const [backups, setBackups] = useState<BackupRecord[] | null>(null);
@@ -276,6 +373,13 @@ export default function BackupPanel() {
                   <div className="flex shrink-0 items-center gap-3">
                     <button
                       type="button"
+                      onClick={() => downloadBackupFile(backup)}
+                      className="text-xs font-bold text-muted hover:text-cream"
+                    >
+                      تحميل
+                    </button>
+                    <button
+                      type="button"
                       onClick={() =>
                         setConfirmingId(confirmingId === backup.id ? null : backup.id)
                       }
@@ -306,6 +410,8 @@ export default function BackupPanel() {
           </ul>
         )}
       </div>
+
+      <RestoreFromFileSection />
     </div>
   );
 }
