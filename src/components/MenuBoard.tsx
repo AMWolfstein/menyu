@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { LiveMenuCategory } from "@/hooks/useMenuData";
+import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { PosterLink, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import {
@@ -27,12 +27,15 @@ const COLORS = {
   line: "#e1e7f2",
 };
 
+type BoardItem = LiveMenuItem & { supplierName?: string };
+type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
+
 export default function MenuBoard({
   categories,
   restaurant,
   posterLinks,
 }: {
-  categories: LiveMenuCategory[];
+  categories: BoardCategory[];
   restaurant: Restaurant;
   posterLinks: PosterLink[];
 }) {
@@ -176,22 +179,31 @@ export default function MenuBoard({
                       key={item.id}
                       style={{
                         display: "flex",
-                        alignItems: "baseline",
+                        alignItems: "flex-start",
                         justifyContent: "space-between",
                         gap: 10,
                         padding: "9px 4px",
                         borderBottom: `1px dashed ${COLORS.line}`,
                       }}
                     >
-                      <span style={{ fontSize: 14.5, fontWeight: 700, color: COLORS.black }}>
-                        {item.name}
-                        {variant && (
-                          <span style={{ fontSize: 11, fontWeight: 400, color: COLORS.muted }}>
-                            {" "}
-                            ({variant.label})
-                          </span>
+                      <div>
+                        <div style={{ fontSize: 14.5, fontWeight: 700, color: COLORS.black }}>
+                          {item.name}
+                          {variant && (
+                            <span style={{ fontSize: 11, fontWeight: 400, color: COLORS.muted }}>
+                              {" "}
+                              ({variant.label})
+                            </span>
+                          )}
+                        </div>
+                        {(item.supplierName || item.badge) && (
+                          <div style={{ marginTop: 2, fontSize: 11, color: COLORS.muted }}>
+                            {item.supplierName}
+                            {item.supplierName && item.badge ? " · " : ""}
+                            {item.badge}
+                          </div>
                         )}
-                      </span>
+                      </div>
                       <span
                         style={{
                           display: "flex",
