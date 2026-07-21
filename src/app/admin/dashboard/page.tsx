@@ -15,12 +15,14 @@ import PosterLinksManager from "@/components/admin/PosterLinksManager";
 import HeroImagesManager from "@/components/admin/HeroImagesManager";
 import BackupPanel from "@/components/admin/BackupPanel";
 import BranchesToggle from "@/components/admin/BranchesToggle";
+import GridLayoutPanel from "@/components/admin/GridLayoutPanel";
 
 const TABS = [
   { id: "items", label: "الأصناف والفئات" },
   { id: "orders", label: "سجل الطلبات" },
   { id: "poster", label: "روابط صور المشاركة" },
   { id: "settings", label: "الإعدادات" },
+  { id: "layout", label: "تخطيط الصفحة" },
   { id: "cart-data", label: "بيانات السلة" },
   { id: "backup", label: "النسخ الاحتياطي" },
 ] as const;
@@ -110,6 +112,8 @@ export default function AdminDashboardPage() {
             <HeroImagesManager />
           </div>
         )}
+
+        {activeTab === "layout" && <GridLayoutPanel />}
 
         {activeTab === "cart-data" && (
           <div className="space-y-6">

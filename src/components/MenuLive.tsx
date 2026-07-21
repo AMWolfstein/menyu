@@ -9,6 +9,7 @@ import SocialLinks from "@/components/SocialLinks";
 import { useMenuData } from "@/hooks/useMenuData";
 import { useSimpleList } from "@/hooks/useSimpleList";
 import { useHeroImages } from "@/hooks/useHeroImages";
+import { useGridLayout } from "@/hooks/useGridLayout";
 import { suppliersApi } from "@/lib/firestore";
 import { itemHasAnyDiscount, getItemMaxDiscountPercent } from "@/lib/discount";
 import { getBestSellers, BEST_SELLER_BADGE_COUNT } from "@/lib/bestSellers";
@@ -33,6 +34,7 @@ export default function MenuLive() {
   const { restaurant, categories, loading } = useMenuData();
   const { items: suppliers } = useSimpleList(suppliersApi);
   const { images: heroImages } = useHeroImages();
+  const gridColumns = useGridLayout();
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeSupplier, setActiveSupplier] = useState<{ id: string; name: string } | null>(
     null
@@ -150,7 +152,10 @@ export default function MenuLive() {
         )}
 
         {pageItems.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+          >
             {pageItems.map((item) => (
               <MenuItemCard
                 key={item.id}

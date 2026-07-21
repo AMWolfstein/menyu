@@ -30,6 +30,7 @@ import type {
 import type { Order } from "@/types/order";
 import type { BackupConfig } from "@/types/backup";
 import type { PushSubscriptionRecord } from "@/types/push";
+import type { GridLayoutConfig } from "@/types/layout";
 
 export type FirestoreCategory = Pick<MenuCategory, "id" | "name" | "icon"> & {
   order: number;
@@ -147,6 +148,20 @@ export async function getBackupConfigOnce(): Promise<BackupConfig | null> {
 
 export function saveBackupConfig(config: BackupConfig): Promise<void> {
   return setDoc(backupConfigRef, config, { merge: true });
+}
+
+// ---------- إعدادات تخطيط شبكة المنتجات (عدد الأعمدة) ----------
+
+const gridLayoutRef = doc(settingsCol, "gridLayout");
+
+export function subscribeGridLayout(cb: (config: GridLayoutConfig | null) => void): Unsubscribe {
+  return onSnapshot(gridLayoutRef, (snap) => {
+    cb(snap.exists() ? (snap.data() as GridLayoutConfig) : null);
+  });
+}
+
+export function saveGridLayout(config: GridLayoutConfig): Promise<void> {
+  return setDoc(gridLayoutRef, config, { merge: true });
 }
 
 // ---------- قراءة حية (real-time) ----------
