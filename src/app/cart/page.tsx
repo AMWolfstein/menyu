@@ -37,6 +37,14 @@ export default function CartPage() {
   const { restaurant, loading } = useMenuData();
   const { items, itemCount, total, removeItem, setQty, clearCart } = useCart();
   const [checkout, setCheckout] = useState<CheckoutInfo>(emptyCheckoutInfo);
+  // ردع بسيط ضد السبام: حقل honeypot مخفي بيتلقّم أوتوماتيك من البوتات
+  // البدائية بس، وحد أدنى للوقت من فتح الصفحة لحد الإرسال — مش بديل عن
+  // rate limiting حقيقي (محتاج Cloud Functions أو Firebase App Check).
+  // وقت الفتح بيتحسب مرة واحدة بس (lazy initializer)، والفحص الفعلي للوقت
+  // بيحصل جوه handleSend بس — Date.now() ممنوع يتنادى وقت الـ render نفسه.
+  const [honeypot, setHoneypot] = useState("");
+  const [mountedAt] = useState(() => Date.now());
+  const honeypotFilled = honeypot.trim() !== "";
 
   const { items: branches } = useSimpleList(branchesApi);
   const { items: deliveryZones } = useSimpleList(deliveryZonesApi);
@@ -66,7 +74,8 @@ export default function CartPage() {
   const canSend =
     checkout.name.trim() !== "" &&
     checkout.phone.trim() !== "" &&
-    (checkout.orderType !== "delivery" || checkout.address.trim() !== "");
+    (checkout.orderType !== "delivery" || checkout.address.trim() !== "") &&
+    !honeypotFilled;
 
   const whatsappUrl = buildWhatsAppOrderUrl(
     items,
@@ -84,6 +93,10 @@ export default function CartPage() {
   };
 
   const handleSend = () => {
+    // handleSend بيتنفّذ بس من onClick — مش وقت الـ render — فـ Date.now()
+    // هنا آمن رغم إن الـ linter مش قادر يثبت كده استاتيكيًا.
+    // eslint-disable-next-line react-hooks/purity
+    if (honeypotFilled || Date.now() - mountedAt < 2000) return;
     const branchName = branches.find((b) => b.id === checkout.branchId)?.name;
     const zoneName = deliveryZones.find((z) => z.id === checkout.zoneId)?.name;
     const paymentMethodName = paymentMethods.find((p) => p.id === checkout.paymentMethodId)?.name;
@@ -221,6 +234,16 @@ export default function CartPage() {
             paymentMethods={paymentMethods}
             value={checkout}
             onChange={setCheckout}
+          />
+
+          <input
+            type="text"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="pointer-events-none absolute h-px w-px overflow-hidden opacity-0"
           />
 
           {canSend ? (
