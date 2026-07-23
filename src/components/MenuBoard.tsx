@@ -70,30 +70,22 @@ function CategoryCard({
   restaurant: Restaurant;
 }) {
   return (
-    <div style={{ marginBottom: 22 }}>
+    <div style={{ marginBottom: 24 }}>
       <div
         style={{
-          padding: "10px 14px",
-          textAlign: "center",
-          fontSize: 15,
-          fontWeight: 800,
-          color: COLORS.white,
-          backgroundColor: COLORS.brand,
-          borderBottom: `3px solid ${COLORS.gold}`,
-          borderRadius: "10px 10px 0 0",
+          display: "inline-block",
+          fontSize: 16,
+          fontWeight: 900,
+          color: COLORS.black,
+          borderBottom: `4px solid ${COLORS.red}`,
+          paddingBottom: 3,
+          marginBottom: 12,
         }}
       >
         {category.icon} {category.name}
       </div>
 
-      <div
-        style={{
-          border: `1px solid ${COLORS.line}`,
-          borderTop: "none",
-          borderRadius: "0 0 10px 10px",
-          padding: "4px 12px",
-        }}
-      >
+      <div>
         {category.items.map((item) => {
           const variant = pickCheapestVariant(item);
           const fields = getVariantDiscountFields(item, variant);
@@ -108,8 +100,7 @@ function CategoryCard({
                 alignItems: "flex-start",
                 justifyContent: "space-between",
                 gap: 8,
-                padding: "8px 0",
-                borderBottom: `1px solid ${COLORS.line}`,
+                padding: "5px 0",
               }}
             >
               <div>
@@ -313,19 +304,17 @@ export default function MenuBoard({
                 <span
                   style={{
                     display: "inline-block",
-                    fontSize: 14,
+                    fontSize: 40,
                     fontWeight: 900,
-                    letterSpacing: 3,
-                    color: COLORS.brand,
-                    backgroundColor: COLORS.gold,
-                    padding: "4px 14px",
-                    borderRadius: 9999,
+                    letterSpacing: 4,
+                    color: COLORS.red,
+                    lineHeight: 1,
                   }}
                 >
                   MENU
                 </span>
                 <span
-                  style={{ marginTop: 8, fontSize: 28, fontWeight: 900, color: COLORS.brand, lineHeight: 1.2 }}
+                  style={{ marginTop: 6, fontSize: 22, fontWeight: 800, color: COLORS.brand, lineHeight: 1.2 }}
                 >
                   {restaurant.name}
                 </span>
