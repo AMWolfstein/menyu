@@ -1,6 +1,11 @@
 import { getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,5 +17,22 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-export const db = getFirestore(app);
+// بيانات المنيو بتتخزن محليًا (IndexedDB) عشان الزبون يقدر يتصفح آخر نسخة
+// شافها حتى لو النت ضعيف/مقطوع — بس ده متاح في المتصفح بس (مفيش IndexedDB
+// على السيرفر، وده بيتنفّذ سيرفر-سايد كمان جوه generateMetadata في
+// layout.tsx). الـ try/catch بيحمي من initializeFirestore بيرفض يتنفّذ
+// تاني على نفس الـ app لو الموديول ده اتحمّل أكتر من مرة (Fast Refresh وقت
+// التطوير)، وبيرجع للـ instance الموجودة بدل ما يطلّع error.
+function createDb() {
+  if (typeof window === "undefined") return getFirestore(app);
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
+    });
+  } catch {
+    return getFirestore(app);
+  }
+}
+
+export const db = createDb();
 export const auth = getAuth(app);

@@ -5,6 +5,7 @@ import { getRestaurantOnce } from "@/lib/firestore";
 import { cloudinaryIconUrl } from "@/lib/cloudinaryIcon";
 import { CartProvider } from "@/context/CartContext";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import OfflineBanner from "@/components/OfflineBanner";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -51,6 +52,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <OfflineBanner />
         <CartProvider>{children}</CartProvider>
         <ServiceWorkerRegister />
       </body>
