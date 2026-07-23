@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
-import type { PosterLink, Restaurant } from "@/types/menu";
+import type { PosterFooterInfo, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
 import {
   isDiscountActive,
@@ -10,177 +10,305 @@ import {
   getVariantDiscountFields,
   pickCheapestVariant,
 } from "@/lib/discount";
-import PosterFooterLinks from "@/components/PosterFooterLinks";
 
 // اللوح ده بيتعرض كصفحة ويب عادية وبيتلقط كمان كصورة (html-to-image) بنفس
-// الشكل بالظبط، فكل حاجة جوّا المنطقة الملتقطة (boardRef) لازم تبقى inline
-// styles بس — نفس قاعدة MenuPosterCard.tsx القديمة (Tailwind v4 بيولّد
-// ألوان lab()/oklch() مش مفهومة لمكتبات الالتقاط دي). عرض اللوح ثابت (مش
-// نسبي) عشان الصورة الناتجة تبقى دايمًا بـ 3 أعمدة، حتى لو اتحمّلت من
-// موبايل بشاشة ضيقة — المعاينة على الشاشة بتتمرر أفقيًا لو الشاشة أضيق.
+// الشكل بالظبط، فكل حاجة جوّا المنطقة الملتقطة لازم تبقى inline styles بس.
+// الخلفية (public/poster-bg.jpg) مرسومة على الـ canvas مباشرة (مش عن طريق
+// html-to-image) — أصل من نفس الأصل (same-origin) فمفيش مشكلة crossOrigin،
+// وده بيوفّر التقاط منفصل ليها. المحتوى (الأعمدة + الفوتر) بيتلقط بشفافية
+// فوقها. أبعاد اللوح مطابقة لمقاسات الخلفية بالظبط (768×1376) والمنطقة
+// الفاضية فيها (مقاسة يدويًا من الصورة) هي اللي بيتحط جواها المنيو.
 
 const COLORS = {
-  bg: "#f4f8fc",
-  brand: "#2f3c93",
   red: "#e2231a",
-  gold: "#eecf36",
   black: "#1a2035",
-  muted: "#6b7690",
-  white: "#ffffff",
-  line: "#e1e7f2",
+  whatsapp: "#16a34a",
 };
 
-const BADGE_COLORS: Record<string, string> = {
-  عادي: "#475569",
+const BADGE_LABEL_COLOR: Record<string, string> = {
+  عادي: COLORS.black,
   نباتي: "#16a34a",
   حار: COLORS.red,
 };
 
-const BOARD_WIDTH = 1200;
-const COLUMN_COUNT = 3;
+const BOARD_WIDTH = 768;
+const BOARD_HEIGHT = 1376;
+const BG_IMAGE_SRC = "/poster-bg.jpg";
+// إحداثيات المنطقة الفاضية في الخلفية (اتقاست يدويًا من الصورة نفسها).
+const CONTENT_TOP = 375;
+const CONTENT_HEIGHT = 690;
+const CONTENT_SIDE_PADDING = 24;
+const FOOTER_TOP = 1108;
+const FOOTER_SIDE_PADDING = 130;
+const COLUMN_COUNT = 2;
+// متوسط "الحمل" (عدد الأصناف + هيدر لكل فئة) المستهدف لكل صفحة — اتحسب
+// تجريبيًا بناءً على معاينة حقيقية بنفس الخط والمساحة، مش قاعدة صارمة.
+const TARGET_LOAD_PER_PAGE = 46;
 
 type BoardItem = LiveMenuItem & { supplierName?: string };
 type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
 
-// html-to-image بيفشل يترجم CSS multi-column (column-count) صح، فبدل ما
-// نعتمد عليه بنوزّع الفئات يدويًا على أعمدة (flexbox عادي) حسب عدد أصنافها
-// — كل فئة بتتحط في أقصر عمود لحد اللحظة دي، عشان الأعمدة تفضل متوازنة.
-function distributeIntoColumns(
-  categories: BoardCategory[],
-  columnCount: number
-): BoardCategory[][] {
-  const columns: BoardCategory[][] = Array.from({ length: columnCount }, () => []);
-  const columnLoad = new Array(columnCount).fill(0);
+// نفس فكرة التوزيع اليدوي على أعمدة اللي استخدمناها قبل كده (html-to-image
+// مش قادر يترجم CSS multi-column صح) — بس هنا التوزيع بيحصل على مرحلة
+// واحدة على مستوى "خانات الأعمدة" كلها (عدد الصفحات × عمودين)، مش صفحة
+// الأول وأعمدة جواها بعد كده. لو وزّعنا صفحة الأول هتفضل صفحة فيها فئة
+// وحيدة كبيرة بتاخد عمود واحد بس (صورة ضيقة وطويلة اوي)؛ التوزيع دفعة
+// واحدة بيضمن كل صفحة تفضل بعمودين حتى لو فيها فئة ضخمة.
+function distributeIntoPages(categories: BoardCategory[]): BoardCategory[][][] {
+  const totalLoad = categories.reduce((sum, c) => sum + c.items.length + 1, 0);
+  const pageCount = Math.max(1, Math.round(totalLoad / TARGET_LOAD_PER_PAGE));
+  const slotCount = Math.min(pageCount * COLUMN_COUNT, Math.max(1, categories.length));
+
+  const slots: BoardCategory[][] = Array.from({ length: slotCount }, () => []);
+  const slotLoad = new Array(slotCount).fill(0);
   for (const category of categories) {
     let shortest = 0;
-    for (let i = 1; i < columnCount; i++) {
-      if (columnLoad[i] < columnLoad[shortest]) shortest = i;
+    for (let i = 1; i < slotCount; i++) {
+      if (slotLoad[i] < slotLoad[shortest]) shortest = i;
     }
-    columns[shortest].push(category);
-    columnLoad[shortest] += category.items.length + 1;
+    slots[shortest].push(category);
+    slotLoad[shortest] += category.items.length + 1;
   }
-  return columns;
+
+  const pages: BoardCategory[][][] = [];
+  for (let i = 0; i < slots.length; i += COLUMN_COUNT) {
+    pages.push(slots.slice(i, i + COLUMN_COUNT));
+  }
+  return pages;
 }
 
-function CategoryCard({
-  category,
-  restaurant,
-}: {
-  category: BoardCategory;
-  restaurant: Restaurant;
-}) {
+function ItemRow({ item, restaurant }: { item: BoardItem; restaurant: Restaurant }) {
+  const variant = pickCheapestVariant(item);
+  const fields = getVariantDiscountFields(item, variant);
+  const discounted = isDiscountActive(fields);
+  const percent = getDiscountPercent(fields);
+
+  const details = [variant?.label, item.supplierName?.trim(), item.badge].filter(Boolean).join(" - ");
+
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "baseline",
+        justifyContent: "space-between",
+        gap: 6,
+        padding: "5px 0",
+      }}
+    >
       <div
         style={{
-          display: "inline-block",
-          fontSize: 16,
-          fontWeight: 900,
+          fontSize: 14.5,
+          fontWeight: 700,
           color: COLORS.black,
-          borderBottom: `4px solid ${COLORS.red}`,
-          paddingBottom: 3,
-          marginBottom: 12,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
-        {category.icon} {category.name}
+        {item.name}
+        {details && (
+          <span style={{ color: item.badge ? (BADGE_LABEL_COLOR[item.badge] ?? COLORS.black) : COLORS.black }}>
+            {" "}
+            - {details}
+          </span>
+        )}
       </div>
-
-      <div>
-        {category.items.map((item) => {
-          const variant = pickCheapestVariant(item);
-          const fields = getVariantDiscountFields(item, variant);
-          const discounted = isDiscountActive(fields);
-          const percent = getDiscountPercent(fields);
-
-          return (
-            <div
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 8,
-                padding: "5px 0",
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: COLORS.black }}>
-                  {item.name}
-                  {variant && (
-                    <span style={{ fontSize: 10.5, fontWeight: 400, color: COLORS.muted }}>
-                      {" "}
-                      ({variant.label})
-                    </span>
-                  )}
-                </div>
-                {(item.supplierName || item.badge) && (
-                  <div style={{ marginTop: 2, fontSize: 10.5 }}>
-                    {item.supplierName && (
-                      <span style={{ color: COLORS.muted }}>{item.supplierName}</span>
-                    )}
-                    {item.supplierName && item.badge && (
-                      <span style={{ color: COLORS.muted }}> · </span>
-                    )}
-                    {item.badge && (
-                      <span
-                        style={{ fontWeight: 700, color: BADGE_COLORS[item.badge] ?? COLORS.muted }}
-                      >
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
-                {discounted && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: COLORS.white,
-                      backgroundColor: COLORS.red,
-                      borderRadius: 9999,
-                      padding: "1px 6px",
-                    }}
-                  >
-                    خصم <span dir="ltr">{percent}%</span>
-                  </span>
-                )}
-                {discounted && (
-                  <span style={{ fontSize: 10, color: COLORS.muted, textDecoration: "line-through" }}>
-                    {formatPrice(fields.price, restaurant.currency)}
-                  </span>
-                )}
-                <span
-                  style={{
-                    fontSize: 13.5,
-                    fontWeight: 800,
-                    color: discounted ? COLORS.red : COLORS.black,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {formatPrice(discounted ? fields.discountPrice! : fields.price, restaurant.currency)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
+        {discounted && (
+          <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.red }}>
+            (خصم <span dir="ltr">{percent}%</span>)
+          </span>
+        )}
+        <span
+          style={{
+            fontSize: 14.5,
+            fontWeight: 700,
+            color: discounted ? COLORS.red : COLORS.black,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {formatPrice(discounted ? fields.discountPrice! : fields.price, restaurant.currency)}
+        </span>
       </div>
     </div>
   );
 }
 
+function PosterPage({
+  pageRef,
+  columns,
+  restaurant,
+  posterFooter,
+}: {
+  pageRef: (el: HTMLDivElement | null) => void;
+  columns: BoardCategory[][];
+  restaurant: Restaurant;
+  posterFooter: PosterFooterInfo;
+}) {
+  return (
+    <div className="w-full overflow-x-auto">
+      <div
+        ref={pageRef}
+        dir="rtl"
+        style={{
+          position: "relative",
+          width: BOARD_WIDTH,
+          height: BOARD_HEIGHT,
+          margin: "0 auto",
+          fontFamily: "var(--font-cairo), system-ui, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: CONTENT_TOP,
+            left: CONTENT_SIDE_PADDING,
+            right: CONTENT_SIDE_PADDING,
+            height: CONTENT_HEIGHT,
+            display: "flex",
+            gap: 18,
+            overflow: "hidden",
+          }}
+        >
+          {columns.map((columnCategories, colIndex) => (
+            <div
+              key={colIndex}
+              data-capture-piece="column"
+              style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
+            >
+              {columnCategories.map((category) => (
+                <div key={category.id} style={{ marginBottom: 4 }}>
+                  <div
+                    style={{
+                      display: "inline-block",
+                      fontSize: 17,
+                      fontWeight: 900,
+                      color: COLORS.black,
+                      borderBottom: `3px solid ${COLORS.red}`,
+                      paddingBottom: 2,
+                      marginTop: 9,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {category.icon} {category.name}
+                  </div>
+                  {category.items.map((item) => (
+                    <ItemRow key={item.id} item={item} restaurant={restaurant} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {(posterFooter.address || posterFooter.whatsapp) && (
+          <div
+            style={{
+              position: "absolute",
+              top: FOOTER_TOP,
+              left: FOOTER_SIDE_PADDING,
+              right: FOOTER_SIDE_PADDING,
+              textAlign: "center",
+            }}
+          >
+            {/* html-to-image بيفشل يلتقط نص عنصر position:absolute مباشرة —
+              بيطلّع صورة فاضية من غير أي error (لقيناها بعد تشخيص مباشر).
+              الحل: data-capture-piece بيتحط على طفل عادي (static) جوّا
+              الغلاف اللي عليه الـ position:absolute، مش على الغلاف نفسه —
+              نفس الباترن اللي الأعمدة شغالة بيه أصلاً (الغلاف اللي فيه
+              الأعمدة absolute، بس كل عمود جواه نفسه flex child عادي). */}
+            <div data-capture-piece="footer">
+              {posterFooter.address && (
+                <div style={{ fontSize: 12, fontWeight: 800, color: COLORS.black }}>
+                  📍 {posterFooter.address}
+                </div>
+              )}
+              {posterFooter.whatsapp && (
+                <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: COLORS.whatsapp }}>
+                  📱 واتساب: <span dir="ltr">{posterFooter.whatsapp}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+let cachedBgImage: HTMLImageElement | null = null;
+function loadBackgroundImage(): Promise<HTMLImageElement> {
+  if (cachedBgImage && cachedBgImage.complete) return Promise.resolve(cachedBgImage);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      cachedBgImage = img;
+      resolve(img);
+    };
+    img.onerror = () => reject(new Error("background image failed to load"));
+    img.src = BG_IMAGE_SRC;
+  });
+}
+
+async function capturePageToDataUrl(pageEl: HTMLElement): Promise<string> {
+  const scale = 2;
+  const { toPng } = await import("html-to-image");
+  const pageRect = pageEl.getBoundingClientRect();
+  const pieceEls = Array.from(pageEl.querySelectorAll<HTMLElement>("[data-capture-piece]"));
+
+  // بنلتقط القطع واحدة ورا التانية (مش بالتوازي) — html-to-image مش آمن مع
+  // نداءات متزامنة، ومش قادر يترجم صح أكتر من طفل معقّد جنب بعض في نفس
+  // الالتقاط (نفس السبب اللي منعنا نلتقط الأعمدة كلها بضربة واحدة).
+  const pieces: { img: HTMLImageElement; x: number; y: number; width: number; height: number }[] = [];
+  for (const el of pieceEls) {
+    const rect = el.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    const dataUrl = await toPng(el, { pixelRatio: scale, cacheBust: true });
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("piece image failed to load"));
+      img.src = dataUrl;
+    });
+    pieces.push({
+      img,
+      x: rect.left - pageRect.left,
+      y: rect.top - pageRect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+  }
+
+  const bgImg = await loadBackgroundImage();
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(pageRect.width * scale);
+  canvas.height = Math.round(pageRect.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas context unavailable");
+  ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+  for (const piece of pieces) {
+    ctx.drawImage(
+      piece.img,
+      Math.round(piece.x * scale),
+      Math.round(piece.y * scale),
+      Math.round(piece.width * scale),
+      Math.round(piece.height * scale)
+    );
+  }
+  return canvas.toDataURL("image/png");
+}
+
 export default function MenuBoard({
   categories,
   restaurant,
-  posterLinks,
+  posterFooter,
 }: {
   categories: BoardCategory[];
   restaurant: Restaurant;
-  posterLinks: PosterLink[];
+  posterFooter: PosterFooterInfo;
 }) {
-  const boardRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activePage, setActivePage] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -190,79 +318,33 @@ export default function MenuBoard({
 
   if (visibleCategories.length === 0) return null;
 
+  const pages = distributeIntoPages(visibleCategories);
+  const hasMultiplePages = pages.length > 1;
+
+  const goToPage = (index: number) => {
+    const clamped = Math.max(0, Math.min(pages.length - 1, index));
+    setActivePage(clamped);
+    pageRefs.current[clamped]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handleDownload = async () => {
-    if (!boardRef.current) return;
     setDownloading(true);
     setError(false);
     try {
-      const logoImg = boardRef.current.querySelector("img");
-      if (logoImg && !logoImg.complete) {
-        await new Promise<void>((resolve) => {
-          logoImg.addEventListener("load", () => resolve(), { once: true });
-          logoImg.addEventListener("error", () => resolve(), { once: true });
-        });
+      await loadBackgroundImage();
+      for (let i = 0; i < pageRefs.current.length; i++) {
+        const pageEl = pageRefs.current[i];
+        if (!pageEl) continue;
+        const dataUrl = await capturePageToDataUrl(pageEl);
+        const link = document.createElement("a");
+        const suffix = hasMultiplePages ? `-${i + 1}` : "";
+        link.download = `${restaurant.name}-المنيو${suffix}.png`;
+        link.href = dataUrl;
+        link.click();
+        if (i < pageRefs.current.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
       }
-
-      // html-to-image بيفشل يلتقط صح لما العنصر المُلتقط عنده أكتر من طفل
-      // فرعي معقّد جنب بعض (اتأكدنا إن التقاط اللوح كله بيرسم عمود واحد بس
-      // ويسيب الباقي فاضي، بينما التقاط كل قطعة (الهيدر / كل عمود / الفوتر)
-      // لوحده بيطلع مطابق تمامًا). فبنلتقط كل قطعة على حدة ونركّبهم بعدين
-      // على canvas واحد باستخدام إحداثياتهم الحقيقية من التخطيط الحي.
-      const scale = 2;
-      const { toPng } = await import("html-to-image");
-      const boardRect = boardRef.current.getBoundingClientRect();
-      const pieceEls = Array.from(
-        boardRef.current.querySelectorAll<HTMLElement>("[data-capture-piece]")
-      );
-
-      // بنلتقط القطع واحدة ورا التانية (مش بالتوازي) — html-to-image مش
-      // آمن مع نداءات متزامنة (حالة داخلية مشتركة بتتلخبط لو اشتغل أكتر
-      // من التقاط في نفس الوقت).
-      const pieces: { img: HTMLImageElement; x: number; y: number; width: number; height: number }[] = [];
-      for (const el of pieceEls) {
-        const rect = el.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) continue;
-        const dataUrl = await toPng(el, {
-          pixelRatio: scale,
-          cacheBust: true,
-          backgroundColor: COLORS.bg,
-        });
-        const img = new Image();
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error("piece image failed to load"));
-          img.src = dataUrl;
-        });
-        pieces.push({
-          img,
-          x: rect.left - boardRect.left,
-          y: rect.top - boardRect.top,
-          width: rect.width,
-          height: rect.height,
-        });
-      }
-
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(boardRect.width * scale);
-      canvas.height = Math.round(boardRect.height * scale);
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("canvas context unavailable");
-      ctx.fillStyle = COLORS.bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      for (const piece of pieces) {
-        ctx.drawImage(
-          piece.img,
-          Math.round(piece.x * scale),
-          Math.round(piece.y * scale),
-          Math.round(piece.width * scale),
-          Math.round(piece.height * scale)
-        );
-      }
-
-      const link = document.createElement("a");
-      link.download = `${restaurant.name}-المنيو.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
     } catch {
       setError(true);
     } finally {
@@ -272,94 +354,52 @@ export default function MenuBoard({
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
-      <div className="w-full overflow-x-auto">
-        <div
-          ref={boardRef}
-          dir="rtl"
-          style={{
-            width: BOARD_WIDTH,
-            margin: "0 auto",
-            backgroundColor: COLORS.bg,
-            padding: "32px 28px",
-            fontFamily: "var(--font-cairo), system-ui, sans-serif",
-          }}
-        >
-          <div data-capture-piece="header">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
-              {restaurant.imageUrl && (
-                // next/image يعدّي الصورة على /_next/image?url=... ويقرر هو
-                // نفسه يحمّلها إمتى (lazy) — الاتنين بيكسروا التقاط
-                // html-to-image اللي بيحتاج src الأصلي مباشرة وcrossOrigin
-                // صريح عشان يقدر يستنى تحميلها بنفسه قبل ما يلتقط (شوف
-                // handleDownload تحت). <img> عادي هنا مقصود، مش سهو.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={restaurant.imageUrl}
-                  alt={restaurant.name}
-                  crossOrigin="anonymous"
-                  style={{ height: 72, width: "auto", borderRadius: 12 }}
-                />
-              )}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                <span
-                  style={{
-                    display: "inline-block",
-                    fontSize: 40,
-                    fontWeight: 900,
-                    letterSpacing: 4,
-                    color: COLORS.red,
-                    lineHeight: 1,
-                  }}
-                >
-                  MENU
-                </span>
-                <span
-                  style={{ marginTop: 6, fontSize: 22, fontWeight: 800, color: COLORS.brand, lineHeight: 1.2 }}
-                >
-                  {restaurant.name}
-                </span>
-              </div>
-            </div>
-            {restaurant.tagline && (
-              <p style={{ margin: "10px 0 0", textAlign: "center", fontSize: 13, color: COLORS.muted }}>
-                {restaurant.tagline}
-              </p>
-            )}
-          </div>
-
-          <div style={{ marginTop: 30, display: "flex", alignItems: "flex-start", gap: 24 }}>
-            {distributeIntoColumns(
-              visibleCategories,
-              Math.min(COLUMN_COUNT, visibleCategories.length)
-            ).map((columnCategories, colIndex) => (
-              <div
-                key={colIndex}
-                data-capture-piece="column"
-                style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
-              >
-                {columnCategories.map((category) => (
-                  <CategoryCard key={category.id} category={category} restaurant={restaurant} />
-                ))}
-              </div>
+      {hasMultiplePages && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => goToPage(activePage - 1)}
+            disabled={activePage === 0}
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-cream transition-colors hover:border-gold/40 disabled:opacity-30"
+          >
+            السابقة ←
+          </button>
+          <div className="flex items-center gap-1.5">
+            {pages.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goToPage(i)}
+                aria-label={`صفحة ${i + 1}`}
+                className={`h-2 w-2 rounded-full transition-colors ${
+                  i === activePage ? "bg-gold" : "bg-line"
+                }`}
+              />
             ))}
           </div>
-
-          <div data-capture-piece="footer">
-            <PosterFooterLinks
-              links={posterLinks}
-              colors={{
-                navy: COLORS.brand,
-                gold: COLORS.gold,
-                red: COLORS.red,
-                dark: COLORS.black,
-                muted: COLORS.muted,
-                gray: "#9ca3af",
-                white: COLORS.white,
-                line: COLORS.line,
-              }}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => goToPage(activePage + 1)}
+            disabled={activePage === pages.length - 1}
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-cream transition-colors hover:border-gold/40 disabled:opacity-30"
+          >
+            → التالية
+          </button>
         </div>
+      )}
+
+      <div className="flex w-full flex-col gap-10">
+        {pages.map((columns, i) => (
+          <PosterPage
+            key={i}
+            pageRef={(el) => {
+              pageRefs.current[i] = el;
+            }}
+            columns={columns}
+            restaurant={restaurant}
+            posterFooter={posterFooter}
+          />
+        ))}
       </div>
 
       <button
@@ -379,7 +419,11 @@ export default function MenuBoard({
           <path d="M12 3v13m0 0-4-4m4 4 4-4" />
           <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
         </svg>
-        {downloading ? "جارٍ التجهيز..." : "تحميل المنيو كصورة"}
+        {downloading
+          ? "جارٍ التجهيز..."
+          : hasMultiplePages
+            ? `تحميل كل الصفحات (${pages.length})`
+            : "تحميل المنيو كصورة"}
       </button>
       {error && <p className="text-xs text-chili">فشل إنشاء الصورة، حاول تاني</p>}
     </div>

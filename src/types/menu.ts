@@ -77,3 +77,14 @@ export type PosterLink = {
   label: string;
   order: number;
 };
+
+/** بيانات فوتر صورة المنيو (/menu) — بتتكتب على قطعة التلج أسفل الخلفية. */
+export type PosterFooterInfo = {
+  address: string;
+  whatsapp: string;
+};
+
+export const DEFAULT_POSTER_FOOTER: PosterFooterInfo = {
+  address: "",
+  whatsapp: "",
+};

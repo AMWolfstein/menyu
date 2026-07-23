@@ -23,6 +23,7 @@ import type {
   HeroImage,
   MenuCategory,
   MenuItem,
+  PosterFooterInfo,
   PosterLink,
   Restaurant,
   SimpleListItem,
@@ -110,6 +111,20 @@ export function updatePosterLink(
 
 export function removePosterLink(id: string): Promise<void> {
   return deleteDoc(doc(posterLinksCol, id));
+}
+
+// ---------- فوتر صورة المنيو (عنوان + واتساب) ----------
+
+const posterFooterRef = doc(settingsCol, "posterFooter");
+
+export function subscribePosterFooter(cb: (footer: PosterFooterInfo | null) => void): Unsubscribe {
+  return onSnapshot(posterFooterRef, (snap) => {
+    cb(snap.exists() ? (snap.data() as PosterFooterInfo) : null);
+  });
+}
+
+export function savePosterFooter(footer: PosterFooterInfo): Promise<void> {
+  return setDoc(posterFooterRef, footer, { merge: true });
 }
 
 // ---------- صور البانر المتحرك (hero carousel) ----------

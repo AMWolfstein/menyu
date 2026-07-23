@@ -12,6 +12,7 @@ import ItemsPanel from "@/components/admin/ItemsPanel";
 import SimpleListManager from "@/components/admin/SimpleListManager";
 import OrdersPanel from "@/components/admin/OrdersPanel";
 import PosterLinksManager from "@/components/admin/PosterLinksManager";
+import PosterFooterPanel from "@/components/admin/PosterFooterPanel";
 import HeroImagesManager from "@/components/admin/HeroImagesManager";
 import BackupPanel from "@/components/admin/BackupPanel";
 import BranchesToggle from "@/components/admin/BranchesToggle";
@@ -21,6 +22,7 @@ const TABS = [
   { id: "items", label: "الأصناف والفئات" },
   { id: "orders", label: "سجل الطلبات" },
   { id: "poster", label: "روابط صور المشاركة" },
+  { id: "poster-footer", label: "فوتر صورة المنيو" },
   { id: "settings", label: "الإعدادات" },
   { id: "layout", label: "تخطيط الصفحة" },
   { id: "cart-data", label: "بيانات السلة" },
@@ -103,6 +105,8 @@ export default function AdminDashboardPage() {
         )}
 
         {activeTab === "poster" && <PosterLinksManager />}
+
+        {activeTab === "poster-footer" && <PosterFooterPanel />}
 
         {activeTab === "settings" && (
           <div className="space-y-6">
