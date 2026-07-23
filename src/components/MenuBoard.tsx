@@ -296,6 +296,12 @@ export default function MenuBoard({
           <div data-capture-piece="header">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18 }}>
               {restaurant.imageUrl && (
+                // next/image يعدّي الصورة على /_next/image?url=... ويقرر هو
+                // نفسه يحمّلها إمتى (lazy) — الاتنين بيكسروا التقاط
+                // html-to-image اللي بيحتاج src الأصلي مباشرة وcrossOrigin
+                // صريح عشان يقدر يستنى تحميلها بنفسه قبل ما يلتقط (شوف
+                // handleDownload تحت). <img> عادي هنا مقصود، مش سهو.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={restaurant.imageUrl}
                   alt={restaurant.name}
