@@ -83,7 +83,12 @@ function ItemRow({ item, restaurant }: { item: BoardItem; restaurant: Restaurant
   const discounted = isDiscountActive(fields);
   const percent = getDiscountPercent(fields);
 
-  const details = [variant?.label, item.supplierName?.trim(), item.badge !== "عادي" ? item.badge : undefined]
+  const details = [
+    item.description?.trim(),
+    variant?.label,
+    item.supplierName?.trim(),
+    item.badge !== "عادي" ? item.badge : undefined,
+  ]
     .filter(Boolean)
     .join(" - ");
 
@@ -221,12 +226,12 @@ function PosterPage({
               الأعمدة absolute، بس كل عمود جواه نفسه flex child عادي). */}
             <div data-capture-piece="footer">
               {posterFooter.address && (
-                <div style={{ fontSize: 12, fontWeight: 800, color: COLORS.black }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.black, lineHeight: 1.3 }}>
                   📍 {posterFooter.address}
                 </div>
               )}
               {posterFooter.whatsapp && (
-                <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, color: COLORS.whatsapp }}>
+                <div style={{ marginTop: 4, fontSize: 14, fontWeight: 700, color: COLORS.whatsapp }}>
                   📱 واتساب: <span dir="ltr">{posterFooter.whatsapp}</span>
                 </div>
               )}
