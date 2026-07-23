@@ -62,19 +62,26 @@ function toTimestamp(dateStr: string): Timestamp {
 
 /**
  * كل صف (وزن) مستقل بالكامل: سعره وخصمه وتاريخ انتهاء خصمه. لو صف واحد بس
- * بيتسجل مباشرة كـ `price`/`discountPrice`/`discountEndsAt` على مستوى
- * الصنف نفسه (زي ما كان الوضع دايمًا للأصناف البسيطة)، ولو أكتر من صف كلهم
- * بيتحولوا لـ variants كل واحد بخصمه الخاص.
+ * وبدون وزن مكتوب، بيتسجل مباشرة كـ `price`/`discountPrice`/`discountEndsAt`
+ * على مستوى الصنف نفسه (زي ما كان الوضع دايمًا للأصناف البسيطة). لكن لو
+ * كُتب وزن حتى لصف واحد بس، أو كان فيه أكتر من صف، كلهم بيتحولوا لـ
+ * variants — قبل كده الوزن المكتوب لصف واحد كان بيتمسح بصمت من غير ما
+ * يتحفظ خالص، وده اللي كان بيمنع خاصية الوزن من الشغل للأصناف البسيطة.
  */
 function cleanPriceRows(rows: PriceRowDraft[]) {
   const valid = rows.filter((r) => Number.isFinite(Number(r.price)) && Number(r.price) > 0);
+  const hasAnyLabel = valid.some((r) => r.label.trim());
 
-  if (valid.length <= 1) {
+  if (valid.length === 0) {
+    return { price: 0, discountPrice: undefined, discountEndsAt: undefined, variants: [] as MenuItemVariant[] };
+  }
+
+  if (valid.length === 1 && !hasAnyLabel) {
     const r = valid[0];
     return {
-      price: r ? Number(r.price) : 0,
-      discountPrice: r?.discountPrice.trim() ? Number(r.discountPrice) : undefined,
-      discountEndsAt: r?.discountEndsAt ? toTimestamp(r.discountEndsAt) : undefined,
+      price: Number(r.price),
+      discountPrice: r.discountPrice.trim() ? Number(r.discountPrice) : undefined,
+      discountEndsAt: r.discountEndsAt ? toTimestamp(r.discountEndsAt) : undefined,
       variants: [] as MenuItemVariant[],
     };
   }
