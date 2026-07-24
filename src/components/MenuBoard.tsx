@@ -83,12 +83,7 @@ function ItemRow({ item, restaurant }: { item: BoardItem; restaurant: Restaurant
   const discounted = isDiscountActive(fields);
   const percent = getDiscountPercent(fields);
 
-  const details = [
-    item.description?.trim(),
-    variant?.label,
-    item.supplierName?.trim(),
-    item.badge !== "عادي" ? item.badge : undefined,
-  ]
+  const details = [variant?.label, item.supplierName?.trim(), item.badge !== "عادي" ? item.badge : undefined]
     .filter(Boolean)
     .join(" - ");
 
