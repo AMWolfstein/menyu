@@ -61,12 +61,10 @@ function toTimestamp(dateStr: string): Timestamp {
 }
 
 /**
- * كل صف (وزن) مستقل بالكامل: سعره وخصمه وتاريخ انتهاء خصمه. لو صف واحد بس
- * وبدون وزن مكتوب، بيتسجل مباشرة كـ `price`/`discountPrice`/`discountEndsAt`
- * على مستوى الصنف نفسه (زي ما كان الوضع دايمًا للأصناف البسيطة). لكن لو
- * كُتب وزن حتى لصف واحد بس، أو كان فيه أكتر من صف، كلهم بيتحولوا لـ
- * variants — قبل كده الوزن المكتوب لصف واحد كان بيتمسح بصمت من غير ما
- * يتحفظ خالص، وده اللي كان بيمنع خاصية الوزن من الشغل للأصناف البسيطة.
+ * كل صف (وزن) مستقل بالكامل: سعره وخصمه وتاريخ انتهاء خصمه. الوزن بقى
+ * إجباري في الفورم (شوف `required` تحت) فعمليًا كل صف بيوصل هنا معاه وزن،
+ * لكن الفرع اللي من غير وزن اتسيب كـ fallback دفاعي (زي أصناف قديمة
+ * محفوظة من قبل ما الوزن بقى إجباري).
  */
 function cleanPriceRows(rows: PriceRowDraft[]) {
   const valid = rows.filter((r) => Number.isFinite(Number(r.price)) && Number(r.price) > 0);
@@ -122,10 +120,10 @@ function PriceRowsEditor({
           <div className="flex items-center gap-2">
             <input
               className={inputClass}
-              placeholder={hasMultiple ? "مثال: 1 كيلو" : "الوزن (اختياري لو سعر واحد)"}
+              placeholder="مثال: 1 كيلو"
               value={row.label}
               onChange={(e) => updateRow(row.id, "label", e.target.value)}
-              required={hasMultiple}
+              required
             />
             {hasMultiple && (
               <button
