@@ -38,7 +38,9 @@ const FOOTER_SIDE_PADDING = 130;
 const COLUMN_COUNT = 2;
 // عدد الأسطر (صنف/وزن) المستهدف لكل عمود — اتحسب تجريبيًا بناءً على معاينة
 // حقيقية بنفس الخط والمساحة، مش قاعدة صارمة. الهيدر بياخد حمل سطر واحد.
-const TARGET_ROWS_PER_COLUMN = 23;
+const TARGET_ROWS_PER_COLUMN = 21;
+// مكان ترقيم الصفحة أسفل قطعة التلج، تحت الفوتر مباشرة.
+const PAGE_NUMBER_TOP = 1250;
 
 type BoardItem = LiveMenuItem & { supplierName?: string };
 type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
@@ -166,11 +168,15 @@ function PosterPage({
   columns,
   restaurant,
   posterFooter,
+  pageIndex,
+  totalPages,
 }: {
   pageRef: (el: HTMLDivElement | null) => void;
   columns: CategorySegment[][];
   restaurant: Restaurant;
   posterFooter: PosterFooterInfo;
+  pageIndex: number;
+  totalPages: number;
 }) {
   return (
     <div className="w-full overflow-x-auto">
@@ -261,6 +267,37 @@ function PosterPage({
                   📱 واتساب: <span dir="ltr">{posterFooter.whatsapp}</span>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div
+            style={{
+              position: "absolute",
+              top: PAGE_NUMBER_TOP,
+              left: 0,
+              right: 0,
+              textAlign: "center",
+            }}
+          >
+            {/* نفس باترن الفوتر: data-capture-piece على طفل static جوّا
+              الغلاف absolute، عشان html-to-image يقدر يلتقطه. */}
+            <div data-capture-piece="page-number" style={{ display: "inline-block" }}>
+              <span
+                style={{
+                  display: "inline-block",
+                  padding: "4px 16px",
+                  borderRadius: 999,
+                  border: `1.5px solid ${COLORS.red}`,
+                  background: "rgba(255,255,255,0.85)",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: COLORS.black,
+                }}
+              >
+                صفحة {pageIndex + 1} من {totalPages}
+              </span>
             </div>
           </div>
         )}
@@ -431,6 +468,8 @@ export default function MenuBoard({
             columns={columns}
             restaurant={restaurant}
             posterFooter={posterFooter}
+            pageIndex={i}
+            totalPages={pages.length}
           />
         ))}
       </div>
