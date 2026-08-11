@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { MenuItemVariant, PosterFooterInfo, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
@@ -488,11 +488,23 @@ export default function MenuBoard({
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(false);
 
-  const visibleCategories = categories
-    .map((c) => ({ ...c, items: c.items.filter((i) => i.available !== false) }))
-    .filter((c) => c.items.length > 0);
+  // لازم useMemo هنا مش حساب عادي — لو اتحسبوا تاني في كل render هياخدوا
+  // reference جديدة كل مرة، وده هيخلي الـ useLayoutEffect جوه
+  // useMeasuredRowHeights (اللي بيعتمد على الـ reference ده) يشتغل تاني وتاني
+  // لا نهائيًا (كل setState بتاعه بيولّد render جديد يولّد reference جديد
+  // يشغّل الـ effect تاني...) ويعلّق المتصفح.
+  const visibleCategories = useMemo(
+    () =>
+      categories
+        .map((c) => ({ ...c, items: c.items.filter((i) => i.available !== false) }))
+        .filter((c) => c.items.length > 0),
+    [categories]
+  );
 
-  const flatRows: BoardRow[] = visibleCategories.flatMap((c) => c.items.flatMap(expandRows));
+  const flatRows: BoardRow[] = useMemo(
+    () => visibleCategories.flatMap((c) => c.items.flatMap(expandRows)),
+    [visibleCategories]
+  );
   const { heights, measurer } = useMeasuredRowHeights(flatRows, restaurant);
 
   if (visibleCategories.length === 0) return null;
