@@ -36,48 +36,61 @@ const CONTENT_SIDE_PADDING = 24;
 const FOOTER_TOP = 1108;
 const FOOTER_SIDE_PADDING = 130;
 const COLUMN_COUNT = 2;
-// متوسط "الحمل" (عدد الأصناف + هيدر لكل فئة) المستهدف لكل صفحة — اتحسب
-// تجريبيًا بناءً على معاينة حقيقية بنفس الخط والمساحة، مش قاعدة صارمة.
-const TARGET_LOAD_PER_PAGE = 46;
+// عدد الأسطر (صنف/وزن) المستهدف لكل عمود — اتحسب تجريبيًا بناءً على معاينة
+// حقيقية بنفس الخط والمساحة، مش قاعدة صارمة. الهيدر بياخد حمل سطر واحد.
+const TARGET_ROWS_PER_COLUMN = 23;
 
 type BoardItem = LiveMenuItem & { supplierName?: string };
 type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
+type BoardRow = { item: BoardItem; variant?: MenuItemVariant };
+// "قطعة" فئة داخل عمود — ممكن الفئة تتقسّم على أكتر من عمود لو أصنافها
+// (بعد توسيع الأوزان) أكتر من محتوى عمود واحد؛ continued بتتحط على أول
+// قطعة مكمّلة لفئة بدأت في عمود سابق.
+type CategorySegment = { category: BoardCategory; rows: BoardRow[]; continued: boolean };
 
-// نفس فكرة التوزيع اليدوي على أعمدة اللي استخدمناها قبل كده (html-to-image
-// مش قادر يترجم CSS multi-column صح) — بس هنا التوزيع بيحصل على مرحلة
-// واحدة على مستوى "خانات الأعمدة" كلها (عدد الصفحات × عمودين)، مش صفحة
-// الأول وأعمدة جواها بعد كده. لو وزّعنا صفحة الأول هتفضل صفحة فيها فئة
-// وحيدة كبيرة بتاخد عمود واحد بس (صورة ضيقة وطويلة اوي)؛ التوزيع دفعة
-// واحدة بيضمن كل صفحة تفضل بعمودين حتى لو فيها فئة ضخمة.
 // كل وزن (variant) في الصنف بيتعرض كسطر مستقل في البوستر (سعره وخصمه
-// مستقلين عن باقي الأوزان) — فحمل الفئة الحقيقي هو عدد الأسطر الناتجة
-// بعد التوسيع، مش عدد أصناف الفئة نفسها.
-function rowCount(item: BoardItem): number {
-  return item.variants && item.variants.length > 0 ? item.variants.length : 1;
+// مستقلين عن باقي الأوزان).
+function expandRows(item: BoardItem): BoardRow[] {
+  if (item.variants && item.variants.length > 0) {
+    return item.variants.map((variant) => ({ item, variant }));
+  }
+  return [{ item }];
 }
 
-function distributeIntoPages(categories: BoardCategory[]): BoardCategory[][][] {
-  const totalLoad = categories.reduce(
-    (sum, c) => sum + c.items.reduce((itemSum, item) => itemSum + rowCount(item), 0) + 1,
-    0
-  );
-  const pageCount = Math.max(1, Math.round(totalLoad / TARGET_LOAD_PER_PAGE));
-  const slotCount = Math.min(pageCount * COLUMN_COUNT, Math.max(1, categories.length));
+// بيوزّع الفئات على أعمدة بالتدفّق (flow) بالترتيب المُدخل — بيملأ العمود
+// الحالي لحد ما يوصل لحمله المستهدف قبل ما يبدأ عمود جديد، ولو فئة عندها
+// أسطر أكتر من سعة عمود واحد (زي فئة فيها عشرات الأصناف بأوزان مختلفة)
+// بتتقسّم على أكتر من عمود بدل ما تتحشر كلها في عمود واحد وتتقصّ من غير
+// ما حد يلاحظ (overflow: hidden على منطقة المحتوى). عدد الأعمدة/الصفحات
+// مش محسوب مقدّمًا — بيكبر لحد ما كل الأصناف تتحط في مكان.
+function distributeIntoPages(categories: BoardCategory[]): CategorySegment[][][] {
+  const columns: CategorySegment[][] = [[]];
+  let columnLoad = 0;
 
-  const slots: BoardCategory[][] = Array.from({ length: slotCount }, () => []);
-  const slotLoad = new Array(slotCount).fill(0);
   for (const category of categories) {
-    let shortest = 0;
-    for (let i = 1; i < slotCount; i++) {
-      if (slotLoad[i] < slotLoad[shortest]) shortest = i;
+    let rows = category.items.flatMap(expandRows);
+    let continued = false;
+    while (rows.length > 0) {
+      if (columnLoad > 0 && columnLoad >= TARGET_ROWS_PER_COLUMN) {
+        columns.push([]);
+        columnLoad = 0;
+      }
+      const capacity = Math.max(1, TARGET_ROWS_PER_COLUMN - columnLoad - 1); // 1 = حمل الهيدر
+      const take = Math.min(capacity, rows.length);
+      columns[columns.length - 1].push({ category, rows: rows.slice(0, take), continued });
+      columnLoad += take + 1;
+      rows = rows.slice(take);
+      continued = true;
+      if (rows.length > 0) {
+        columns.push([]);
+        columnLoad = 0;
+      }
     }
-    slots[shortest].push(category);
-    slotLoad[shortest] += category.items.reduce((sum, item) => sum + rowCount(item), 0) + 1;
   }
 
-  const pages: BoardCategory[][][] = [];
-  for (let i = 0; i < slots.length; i += COLUMN_COUNT) {
-    pages.push(slots.slice(i, i + COLUMN_COUNT));
+  const pages: CategorySegment[][][] = [];
+  for (let i = 0; i < columns.length; i += COLUMN_COUNT) {
+    pages.push(columns.slice(i, i + COLUMN_COUNT));
   }
   return pages;
 }
@@ -155,7 +168,7 @@ function PosterPage({
   posterFooter,
 }: {
   pageRef: (el: HTMLDivElement | null) => void;
-  columns: BoardCategory[][];
+  columns: CategorySegment[][];
   restaurant: Restaurant;
   posterFooter: PosterFooterInfo;
 }) {
@@ -184,14 +197,14 @@ function PosterPage({
             overflow: "hidden",
           }}
         >
-          {columns.map((columnCategories, colIndex) => (
+          {columns.map((segments, colIndex) => (
             <div
               key={colIndex}
               data-capture-piece="column"
               style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
             >
-              {columnCategories.map((category) => (
-                <div key={category.id} style={{ marginBottom: 4 }}>
+              {segments.map((segment, segIndex) => (
+                <div key={`${segment.category.id}-${segIndex}`} style={{ marginBottom: 4 }}>
                   <div
                     style={{
                       display: "inline-block",
@@ -204,22 +217,17 @@ function PosterPage({
                       marginBottom: 8,
                     }}
                   >
-                    {category.icon} {category.name}
+                    {segment.category.icon} {segment.category.name}
+                    {segment.continued && " (تابع)"}
                   </div>
-                  {category.items.map((item) =>
-                    item.variants && item.variants.length > 0 ? (
-                      item.variants.map((variant) => (
-                        <ItemRow
-                          key={variant.id}
-                          item={item}
-                          variant={variant}
-                          restaurant={restaurant}
-                        />
-                      ))
-                    ) : (
-                      <ItemRow key={item.id} item={item} restaurant={restaurant} />
-                    )
-                  )}
+                  {segment.rows.map(({ item, variant }) => (
+                    <ItemRow
+                      key={variant ? variant.id : item.id}
+                      item={item}
+                      variant={variant}
+                      restaurant={restaurant}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
