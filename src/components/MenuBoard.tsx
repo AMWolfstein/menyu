@@ -2,14 +2,9 @@
 
 import { useRef, useState } from "react";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
-import type { PosterFooterInfo, Restaurant } from "@/types/menu";
+import type { MenuItemVariant, PosterFooterInfo, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
-import {
-  isDiscountActive,
-  getDiscountPercent,
-  getVariantDiscountFields,
-  pickCheapestVariant,
-} from "@/lib/discount";
+import { isDiscountActive, getDiscountPercent, getVariantDiscountFields } from "@/lib/discount";
 
 // اللوح ده بيتعرض كصفحة ويب عادية وبيتلقط كمان كصورة (html-to-image) بنفس
 // الشكل بالظبط، فكل حاجة جوّا المنطقة الملتقطة لازم تبقى inline styles بس.
@@ -54,8 +49,18 @@ type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
 // الأول وأعمدة جواها بعد كده. لو وزّعنا صفحة الأول هتفضل صفحة فيها فئة
 // وحيدة كبيرة بتاخد عمود واحد بس (صورة ضيقة وطويلة اوي)؛ التوزيع دفعة
 // واحدة بيضمن كل صفحة تفضل بعمودين حتى لو فيها فئة ضخمة.
+// كل وزن (variant) في الصنف بيتعرض كسطر مستقل في البوستر (سعره وخصمه
+// مستقلين عن باقي الأوزان) — فحمل الفئة الحقيقي هو عدد الأسطر الناتجة
+// بعد التوسيع، مش عدد أصناف الفئة نفسها.
+function rowCount(item: BoardItem): number {
+  return item.variants && item.variants.length > 0 ? item.variants.length : 1;
+}
+
 function distributeIntoPages(categories: BoardCategory[]): BoardCategory[][][] {
-  const totalLoad = categories.reduce((sum, c) => sum + c.items.length + 1, 0);
+  const totalLoad = categories.reduce(
+    (sum, c) => sum + c.items.reduce((itemSum, item) => itemSum + rowCount(item), 0) + 1,
+    0
+  );
   const pageCount = Math.max(1, Math.round(totalLoad / TARGET_LOAD_PER_PAGE));
   const slotCount = Math.min(pageCount * COLUMN_COUNT, Math.max(1, categories.length));
 
@@ -67,7 +72,7 @@ function distributeIntoPages(categories: BoardCategory[]): BoardCategory[][][] {
       if (slotLoad[i] < slotLoad[shortest]) shortest = i;
     }
     slots[shortest].push(category);
-    slotLoad[shortest] += category.items.length + 1;
+    slotLoad[shortest] += category.items.reduce((sum, item) => sum + rowCount(item), 0) + 1;
   }
 
   const pages: BoardCategory[][][] = [];
@@ -77,8 +82,15 @@ function distributeIntoPages(categories: BoardCategory[]): BoardCategory[][][] {
   return pages;
 }
 
-function ItemRow({ item, restaurant }: { item: BoardItem; restaurant: Restaurant }) {
-  const variant = pickCheapestVariant(item);
+function ItemRow({
+  item,
+  variant,
+  restaurant,
+}: {
+  item: BoardItem;
+  variant?: MenuItemVariant;
+  restaurant: Restaurant;
+}) {
   const fields = getVariantDiscountFields(item, variant);
   const discounted = isDiscountActive(fields);
   const percent = getDiscountPercent(fields);
@@ -194,9 +206,20 @@ function PosterPage({
                   >
                     {category.icon} {category.name}
                   </div>
-                  {category.items.map((item) => (
-                    <ItemRow key={item.id} item={item} restaurant={restaurant} />
-                  ))}
+                  {category.items.map((item) =>
+                    item.variants && item.variants.length > 0 ? (
+                      item.variants.map((variant) => (
+                        <ItemRow
+                          key={variant.id}
+                          item={item}
+                          variant={variant}
+                          restaurant={restaurant}
+                        />
+                      ))
+                    ) : (
+                      <ItemRow key={item.id} item={item} restaurant={restaurant} />
+                    )
+                  )}
                 </div>
               ))}
             </div>
