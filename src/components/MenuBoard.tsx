@@ -36,11 +36,33 @@ const CONTENT_SIDE_PADDING = 24;
 const FOOTER_TOP = 1108;
 const FOOTER_SIDE_PADDING = 130;
 const COLUMN_COUNT = 2;
-// عدد الأسطر (صنف/وزن) المستهدف لكل عمود — اتحسب تجريبيًا بناءً على معاينة
-// حقيقية بنفس الخط والمساحة، مش قاعدة صارمة. الهيدر بياخد حمل سطر واحد.
-const TARGET_ROWS_PER_COLUMN = 21;
 // مكان ترقيم الصفحة أسفل قطعة التلج، تحت الفوتر مباشرة.
 const PAGE_NUMBER_TOP = 1250;
+
+// ارتفاع سطر الصنف بالبيكسل — بيتحسب من نفس القيم اللي الـ JSX بتستخدمها
+// (padding + line-height)، مش رقم تخميني منفصل، عشان التوزيع يطابق الشكل
+// الفعلي بالظبط. الـ line-height بيتحط صراحةً (مش قيمة الخط الافتراضية)
+// عشان يبقى الارتفاع ثابت ومعروف مقدّمًا.
+const ROW_PADDING_Y = 5;
+const ROW_LINE_HEIGHT = 18;
+const ROW_HEIGHT = ROW_PADDING_Y * 2 + ROW_LINE_HEIGHT;
+
+// نفس الفكرة لهيدر الفئة — بيتجمّع من كل الـ margin/padding/border الفعليين
+// المستخدَمين في الـ JSX: مسافة فوق الهيدر، ارتفاع سطره، مسافة تحته لحد أول
+// صنف، زائد marginBottom بتاع غلاف القطعة نفسه (بعد آخر صنف فيها).
+const HEADER_MARGIN_TOP = 9;
+const HEADER_LINE_HEIGHT = 20;
+const HEADER_PADDING_BOTTOM = 2;
+const HEADER_BORDER_BOTTOM = 3;
+const HEADER_MARGIN_BOTTOM = 8;
+const SEGMENT_MARGIN_BOTTOM = 4;
+const HEADER_HEIGHT =
+  HEADER_MARGIN_TOP +
+  HEADER_LINE_HEIGHT +
+  HEADER_PADDING_BOTTOM +
+  HEADER_BORDER_BOTTOM +
+  HEADER_MARGIN_BOTTOM +
+  SEGMENT_MARGIN_BOTTOM;
 
 type BoardItem = LiveMenuItem & { supplierName?: string };
 type BoardCategory = Omit<LiveMenuCategory, "items"> & { items: BoardItem[] };
@@ -67,25 +89,26 @@ function expandRows(item: BoardItem): BoardRow[] {
 // مش محسوب مقدّمًا — بيكبر لحد ما كل الأصناف تتحط في مكان.
 function distributeIntoPages(categories: BoardCategory[]): CategorySegment[][][] {
   const columns: CategorySegment[][] = [[]];
-  let columnLoad = 0;
+  let columnHeight = 0;
 
   for (const category of categories) {
     let rows = category.items.flatMap(expandRows);
     let continued = false;
     while (rows.length > 0) {
-      if (columnLoad > 0 && columnLoad >= TARGET_ROWS_PER_COLUMN) {
+      if (columnHeight > 0 && columnHeight + HEADER_HEIGHT + ROW_HEIGHT > CONTENT_HEIGHT) {
         columns.push([]);
-        columnLoad = 0;
+        columnHeight = 0;
       }
-      const capacity = Math.max(1, TARGET_ROWS_PER_COLUMN - columnLoad - 1); // 1 = حمل الهيدر
+      const available = CONTENT_HEIGHT - columnHeight - HEADER_HEIGHT;
+      const capacity = Math.max(1, Math.floor(available / ROW_HEIGHT));
       const take = Math.min(capacity, rows.length);
       columns[columns.length - 1].push({ category, rows: rows.slice(0, take), continued });
-      columnLoad += take + 1;
+      columnHeight += HEADER_HEIGHT + take * ROW_HEIGHT;
       rows = rows.slice(take);
       continued = true;
       if (rows.length > 0) {
         columns.push([]);
-        columnLoad = 0;
+        columnHeight = 0;
       }
     }
   }
@@ -121,13 +144,14 @@ function ItemRow({
         alignItems: "baseline",
         justifyContent: "space-between",
         gap: 6,
-        padding: "5px 0",
+        padding: `${ROW_PADDING_Y}px 0`,
       }}
     >
       <div
         style={{
           fontSize: 14.5,
           fontWeight: 700,
+          lineHeight: `${ROW_LINE_HEIGHT}px`,
           color: COLORS.black,
           whiteSpace: "nowrap",
           overflow: "hidden",
@@ -152,6 +176,7 @@ function ItemRow({
           style={{
             fontSize: 14.5,
             fontWeight: 700,
+            lineHeight: `${ROW_LINE_HEIGHT}px`,
             color: discounted ? COLORS.red : COLORS.black,
             whiteSpace: "nowrap",
           }}
@@ -210,17 +235,21 @@ function PosterPage({
               style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
             >
               {segments.map((segment, segIndex) => (
-                <div key={`${segment.category.id}-${segIndex}`} style={{ marginBottom: 4 }}>
+                <div
+                  key={`${segment.category.id}-${segIndex}`}
+                  style={{ marginBottom: SEGMENT_MARGIN_BOTTOM }}
+                >
                   <div
                     style={{
                       display: "inline-block",
                       fontSize: 17,
                       fontWeight: 900,
+                      lineHeight: `${HEADER_LINE_HEIGHT}px`,
                       color: COLORS.black,
-                      borderBottom: `3px solid ${COLORS.red}`,
-                      paddingBottom: 2,
-                      marginTop: 9,
-                      marginBottom: 8,
+                      borderBottom: `${HEADER_BORDER_BOTTOM}px solid ${COLORS.red}`,
+                      paddingBottom: HEADER_PADDING_BOTTOM,
+                      marginTop: HEADER_MARGIN_TOP,
+                      marginBottom: HEADER_MARGIN_BOTTOM,
                     }}
                   >
                     {segment.category.icon} {segment.category.name}
