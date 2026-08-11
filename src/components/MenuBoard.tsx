@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { LiveMenuCategory, LiveMenuItem } from "@/hooks/useMenuData";
 import type { MenuItemVariant, PosterFooterInfo, Restaurant } from "@/types/menu";
 import { formatPrice } from "@/lib/format";
@@ -36,13 +36,15 @@ const CONTENT_SIDE_PADDING = 24;
 const FOOTER_TOP = 1108;
 const FOOTER_SIDE_PADDING = 130;
 const COLUMN_COUNT = 2;
+const COLUMN_GAP = 18;
+const COLUMN_WIDTH = (BOARD_WIDTH - CONTENT_SIDE_PADDING * 2 - COLUMN_GAP * (COLUMN_COUNT - 1)) / COLUMN_COUNT;
 // مكان ترقيم الصفحة أسفل قطعة التلج، تحت الفوتر مباشرة.
 const PAGE_NUMBER_TOP = 1250;
 
-// ارتفاع سطر الصنف بالبيكسل — بيتحسب من نفس القيم اللي الـ JSX بتستخدمها
-// (padding + line-height)، مش رقم تخميني منفصل، عشان التوزيع يطابق الشكل
-// الفعلي بالظبط. الـ line-height بيتحط صراحةً (مش قيمة الخط الافتراضية)
-// عشان يبقى الارتفاع ثابت ومعروف مقدّمًا.
+// ارتفاع سطر الصنف الافتراضي (سطر واحد) — بيتحسب من نفس القيم اللي الـ JSX
+// بتستخدمها (padding + line-height). ده بس fallback قبل ما نقيس الارتفاع
+// الحقيقي فعليًا (اسم الصنف ممكن ياخد سطرين لو طويل — بص على
+// useMeasuredRowHeights)، مش رقم نهائي بيتفرض على كل الأصناف.
 const ROW_PADDING_Y = 5;
 const ROW_LINE_HEIGHT = 18;
 const ROW_HEIGHT = ROW_PADDING_Y * 2 + ROW_LINE_HEIGHT;
@@ -86,8 +88,13 @@ function expandRows(item: BoardItem): BoardRow[] {
 // أسطر أكتر من سعة عمود واحد (زي فئة فيها عشرات الأصناف بأوزان مختلفة)
 // بتتقسّم على أكتر من عمود بدل ما تتحشر كلها في عمود واحد وتتقصّ من غير
 // ما حد يلاحظ (overflow: hidden على منطقة المحتوى). عدد الأعمدة/الصفحات
-// مش محسوب مقدّمًا — بيكبر لحد ما كل الأصناف تتحط في مكان.
-function distributeIntoPages(categories: BoardCategory[]): CategorySegment[][][] {
+// مش محسوب مقدّمًا — بيكبر لحد ما كل الأصناف تتحط في مكان. ارتفاع كل سطر
+// بييجي من rowHeightOf مش رقم ثابت، عشان الأصناف اللي اسمها طويل وبتاخد
+// سطرين تاخد حسابها الحقيقي بدل ما تتحسب زي أي سطر عادي وتسبب قصّ.
+function distributeIntoPages(
+  categories: BoardCategory[],
+  rowHeightOf: (row: BoardRow) => number
+): CategorySegment[][][] {
   const columns: CategorySegment[][] = [[]];
   let columnHeight = 0;
 
@@ -95,15 +102,22 @@ function distributeIntoPages(categories: BoardCategory[]): CategorySegment[][][]
     let rows = category.items.flatMap(expandRows);
     let continued = false;
     while (rows.length > 0) {
-      if (columnHeight > 0 && columnHeight + HEADER_HEIGHT + ROW_HEIGHT > CONTENT_HEIGHT) {
+      const firstRowHeight = rowHeightOf(rows[0]);
+      if (columnHeight > 0 && columnHeight + HEADER_HEIGHT + firstRowHeight > CONTENT_HEIGHT) {
         columns.push([]);
         columnHeight = 0;
       }
       const available = CONTENT_HEIGHT - columnHeight - HEADER_HEIGHT;
-      const capacity = Math.max(1, Math.floor(available / ROW_HEIGHT));
-      const take = Math.min(capacity, rows.length);
+      let take = 0;
+      let used = 0;
+      while (take < rows.length) {
+        const h = rowHeightOf(rows[take]);
+        if (take > 0 && used + h > available) break;
+        used += h;
+        take++;
+      }
       columns[columns.length - 1].push({ category, rows: rows.slice(0, take), continued });
-      columnHeight += HEADER_HEIGHT + take * ROW_HEIGHT;
+      columnHeight += HEADER_HEIGHT + used;
       rows = rows.slice(take);
       continued = true;
       if (rows.length > 0) {
@@ -141,7 +155,7 @@ function ItemRow({
     <div
       style={{
         display: "flex",
-        alignItems: "baseline",
+        alignItems: "center",
         justifyContent: "space-between",
         gap: 6,
         padding: `${ROW_PADDING_Y}px 0`,
@@ -153,7 +167,11 @@ function ItemRow({
           fontWeight: 700,
           lineHeight: `${ROW_LINE_HEIGHT}px`,
           color: COLORS.black,
-          whiteSpace: "nowrap",
+          minWidth: 0,
+          flex: "1 1 auto",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
           overflow: "hidden",
           textOverflow: "ellipsis",
         }}
@@ -186,6 +204,65 @@ function ItemRow({
       </div>
     </div>
   );
+}
+
+function rowKey(row: BoardRow): string {
+  return row.variant ? row.variant.id : row.item.id;
+}
+
+// اسم الصنف بقى ممكن ياخد سطرين لو طويل (بدل ما يتقص بـ "...")، فارتفاع
+// السطر بقى متغيّر مش رقم ثابت. بنقيس الارتفاع الحقيقي بعرض العمود الفعلي
+// عن طريق عرض كل سطر مخفي (visibility: hidden) برّه الشاشة بنفس الـ
+// ItemRow المستخدم في الصفحة الحقيقية، وبنقرأ ارتفاعه بعد الرسم مباشرة
+// (useLayoutEffect) قبل ما المتصفح يرسم أي حاجة للمستخدم — عشان التوزيع
+// اللي بيستخدم القياس ده يبقى جاهز من أول فريم يشوفه حد، من غير وميض.
+function useMeasuredRowHeights(rows: BoardRow[], restaurant: Restaurant) {
+  const [heights, setHeights] = useState<Map<string, number> | null>(null);
+  const nodeRefs = useRef(new Map<string, HTMLDivElement>());
+
+  useLayoutEffect(() => {
+    const next = new Map<string, number>();
+    for (const row of rows) {
+      const el = nodeRefs.current.get(rowKey(row));
+      if (el) next.set(rowKey(row), el.getBoundingClientRect().height);
+    }
+    // لازم تقرا الـ DOM بعد ما يترسم عشان تقيس الارتفاع الحقيقي، فمفيش بديل
+    // غير setState هنا — بس بما إنها useLayoutEffect بتحصل قبل ما المتصفح
+    // يرسم، الـ re-render بتاعها مش بيتشاف كوميض.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHeights(next);
+  }, [rows]);
+
+  const measurer = (
+    <div
+      aria-hidden
+      style={{
+        position: "fixed",
+        top: 0,
+        left: -9999,
+        width: COLUMN_WIDTH,
+        visibility: "hidden",
+        pointerEvents: "none",
+      }}
+    >
+      {rows.map((row) => {
+        const key = rowKey(row);
+        return (
+          <div
+            key={key}
+            ref={(el) => {
+              if (el) nodeRefs.current.set(key, el);
+              else nodeRefs.current.delete(key);
+            }}
+          >
+            <ItemRow item={row.item} variant={row.variant} restaurant={restaurant} />
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  return { heights, measurer };
 }
 
 function PosterPage({
@@ -224,7 +301,7 @@ function PosterPage({
             right: CONTENT_SIDE_PADDING,
             height: CONTENT_HEIGHT,
             display: "flex",
-            gap: 18,
+            gap: COLUMN_GAP,
             overflow: "hidden",
           }}
         >
@@ -255,11 +332,11 @@ function PosterPage({
                     {segment.category.icon} {segment.category.name}
                     {segment.continued && " (تابع)"}
                   </div>
-                  {segment.rows.map(({ item, variant }) => (
+                  {segment.rows.map((row) => (
                     <ItemRow
-                      key={variant ? variant.id : item.id}
-                      item={item}
-                      variant={variant}
+                      key={rowKey(row)}
+                      item={row.item}
+                      variant={row.variant}
                       restaurant={restaurant}
                     />
                   ))}
@@ -415,9 +492,13 @@ export default function MenuBoard({
     .map((c) => ({ ...c, items: c.items.filter((i) => i.available !== false) }))
     .filter((c) => c.items.length > 0);
 
+  const flatRows: BoardRow[] = visibleCategories.flatMap((c) => c.items.flatMap(expandRows));
+  const { heights, measurer } = useMeasuredRowHeights(flatRows, restaurant);
+
   if (visibleCategories.length === 0) return null;
 
-  const pages = distributeIntoPages(visibleCategories);
+  const rowHeightOf = (row: BoardRow) => heights?.get(rowKey(row)) ?? ROW_HEIGHT;
+  const pages = distributeIntoPages(visibleCategories, rowHeightOf);
   const hasMultiplePages = pages.length > 1;
 
   const goToPage = (index: number) => {
@@ -453,6 +534,7 @@ export default function MenuBoard({
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
+      {measurer}
       {hasMultiplePages && (
         <div className="flex items-center gap-3">
           <button
